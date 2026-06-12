@@ -1,20 +1,19 @@
 # Handoff: Novamira AdrianV2 Plugin
 
-**Stand:** 2026-06-10 (Phase 1-6 abgeschlossen, V2 live + MCP-verifiziert)
+**Stand:** 2026-06-12 (v1.0.0 — komplette Konsolidierung abgeschlossen, Repo-Cleanup, CI eingerichtet)
 **Zielpfad:** `C:/Users/adini/Desktop/Umbau/novamira-adrianv2/`
-**Live-Pfad (für Deploy):** `C:/Users/adini/Local Sites/solar/app/public/wp-content/plugins/novamira-adrianv2/`
+**Live-Pfad (fuer Deploy):** `C:/Users/adini/Local Sites/solar/app/public/wp-content/plugins/novamira-adrianv2/`
 
 ---
 
 ## 1. Worum geht's?
 
-Auf `solar.local` listet das aktive Plugin `novamira-adrians-extra` (v2.0.0) nur **18 von 33 erwarteten Abilities**. Ursache: **Single-Closure-Bug** in der `wp_abilities_api_init`-Closure (9 `register()`-Calls in einer Closure; ein fataler Fehler ab Position 5 killt stille die letzten 4 Ability-Klassen).
+`novamira-adrianv2` ist die **saubere Konsolidierung** der alten V1-Plugins (`novamira-adrians` + `novamira-adrians-extra`) in ein einziges, ordentlich strukturiertes Plugin mit:
+- Korrektem Namespace `Novamira\AdrianV2`
+- Per-Group-Bootstrap mit Try/Catch um jeden `register()`-Call
+- ~57 aktiven MCP-Abilities (via MCP-Discovery verifiziert)
 
-Wir bauen deshalb **`novamira-adrianv2`** als saubere Konsolidierung von:
-- `novamira-adrians` (v1.0.0, ~40 Abilities, Namespace `Novamira\Adrians`)
-- `novamira-adrians-extra` (v2.0.0, 33 Abilities, Namespace `NickWebdesign\Adrians`)
-
-→ **Ein Plugin, ~73 Abilities, Per-Group-Bootstrap mit Try/Catch, korrekter Namespace.**
+**Die alten Plugins sind deaktiviert, geloescht und durch V2 komplett ersetzt.**
 
 ---
 
@@ -136,14 +135,14 @@ Vorteil: Fehler in einer Sub-Domain blockieren nicht die anderen.
 
 ### Phase 6 — Deploy + MCP-Verifikation ✓ abgeschlossen
 
-**Deployment-Schritte (ausgeführt am 2026-06-10):**
+**Deployment-Schritte (ausgefuehrt am 2026-06-10, Plugin ist live):**
 ```bash
 # 1. V2-Plugin nach solar.local/wp-content/plugins/ kopiert
 cp -r 'C:/Users/adini/Desktop/Umbau/novamira-adrianv2/' \
       'C:/Users/adini/Local Sites/solar/app/public/wp-content/plugins/'
 
 # 2. Im WP-Admin: "Novamira AdrianV2" aktiviert
-# 3. Alte Plugins deaktiviert: novamira-adrians (v1) + novamira-adrians-extra (v1.9.0 + 2× v2.0.0)
+# 3. Alte Plugins deaktiviert + geloescht
 # 4. mcp-adapter-discover-abilities via Claude Desktop (MCP-Server: novamira-solar-local) aufgerufen
 ```
 
@@ -187,15 +186,15 @@ cp -r 'C:/Users/adini/Desktop/Umbau/novamira-adrianv2/' \
 
 ---
 
-## 5. Source-Plugins (zu portieren / referenzieren)
+## 5. Source-Plugins (archiviert / referenziert)
 
 | Pfad | Inhalt | Status |
 |---|---|---|
-| `C:/Users/adini/Local Sites/solar/app/public/wp-content/plugins/novamira-adrians/` | v1, ~40 Abilities, 5 Sub-Dirs (elementor/media/audit/variables/utilities) | aktiv auf solar.local |
-| `C:/Users/adini/Local Sites/solar/app/public/wp-content/plugins/novamira-adrians-extra/` | v2 Extra, 33 Abilities, flach in `includes/` + 2 in `abilities/` | aktiv, broken (15/33) |
-| `C:/Users/adini/Local Sites/solar/app/public/wp-content/plugins/Neubau/` | Alter Live-Stand (Mirror) | deaktiviert |
-| `C:/Users/adini/Desktop/Umbau/Neubau/` | Source für Live-Mirror | Backup |
+| `C:/Users/adini/Desktop/Novamira-Plugins/novamira/` | Basis-Plugin (Free) — MCP-Server, Skills, Gutenberg | Eigenes Repo |
+| `C:/Users/adini/Desktop/Novamira-Plugins/emcp-tools/` | Haupt-Plugin (Pro) — MCP-Adapter, ~20 Abilities | Eigenes Repo |
 | `https://github.com/use-novamira/novamira` | Offizielles Novamira-Plugin | Pattern-Referenz |
+
+> Die alten V1-Plugins (`novamira-adrians`, `novamira-adrians-extra`) sind geloescht. Der Code lebt migriert in `novamira-adrianv2` weiter.
 
 **Pattern-Referenz:** Im offiziellen Novamira-Plugin:
 - `includes/abilities/<gruppe>/bootstrap.php` (eine pro Gruppe)
@@ -240,15 +239,11 @@ find 'C:/Users/adini/Desktop/Umbau/novamira-adrianv2' -name '*.php' -exec php -l
 # === Helper-Smoke-Test ===
 cd 'C:/Users/adini/Desktop/Umbau/novamira-adrianv2' && php -r "require 'includes/helpers/bootstrap.php';"
 
-# === WP Plugin-Status ===
-wp plugin list --path='C:/Users/adini/Local Sites/solar/app/public'
-
-# === MCP Discovery ===
-# Via Claude Desktop (MCP-Server: novamira-solar-local) oder direkt:
-#   1) mcp-adapter-discover-abilities — listet 109 Abilities (57 V2 + 52 offiziell)
-#   2) mcp-adapter-get-ability-info --ability_name "novamira-adrianv2/<name>" — Schema
-#   3) mcp-adapter-execute-ability --ability_name "..." --arguments {...} — Aufruf
-# Siehe Phase 6 oben für Setup-Details.
+# === Aktuelles Deployment ===
+# Siehe README.md fuer Installationsanleitung
+# Plugin-Update auf solar.local:
+cp -r 'C:/Users/adini/Desktop/Umbau/novamira-adrianv2/' \
+      'C:/Users/adini/Local Sites/solar/app/public/wp-content/plugins/'
 ```
 
 ---
@@ -265,14 +260,17 @@ wp plugin list --path='C:/Users/adini/Local Sites/solar/app/public'
 
 ---
 
-## 9. Optionale Aufräumarbeiten
+## 9. Erledigte & noch offene Aufraeumarbeiten
 
-- [ ] `permission_callback`-Quelle verifizieren (grep nach `novamira_permission_callback` in `novamira-adrianv2/`)
-- [ ] `/tmp/v1-port/source/` Backup entsorgen
-- [ ] V2-Plugin Header `Requires Plugins:` ergänzen (Elementor + Novamira)
+- [x] V1-Plugins (`novamira-adrians`, `novamira-adrians-extra`) deaktiviert & geloescht
+- [x] V2-Plugin nach `solar.local` deployt, aktiviert
+- [x] Repo-Cleanup: toter Code, leere Directories, alte Planungs-Artefakte
+- [x] Plugin-Infrastruktur: `composer.json`, `phpcs.xml`, `README.md`, `CHANGELOG.md`
+- [x] CI/CD: GitHub Actions Workflow (Psalm + PHPCS + PHPUnit)
+- [x] Rollback Cleanup + Split-Large-Tree Timeout-Fallback (Pipeline v0.8.0)
+- [ ] E2E-Test mit echter Framer-URL (https://remarkable-interface-616594.framer.app/)
+- [ ] `composer.lock` committen (composer install auf solar.local ausfuehren)
 - [ ] WP_DEBUG auf solar.local aktivieren damit Bootstrap-Fehler sichtbar werden
-- [ ] End-to-End-Test einer V2-Ability: `novamira-adrianv2/audit-page-seo` auf Home (ID 52)
-- [ ] Settings-Migration: Option-Keys zwischen v1 und v2 prüfen (falls v1 Optionen persistiert hat)
 
 ---
 
