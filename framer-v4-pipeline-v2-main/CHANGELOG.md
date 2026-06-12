@@ -1,5 +1,52 @@
 # Changelog — framer-v4-pipeline-v2
 
+## [v0.9.0] — 2026-06-12
+
+### Repo-Cleanup & Infrastruktur
+
+- **Root `.gitignore`**: node_modules, vendor, results/, *.zip, *.log, IDE-Dateien
+- **V1-Plugins geloescht**: `novamira-adrians/`, `novamira-adrians-extra/`, redundante `includes/`
+- **`results/` geloescht**: 19 JSON-Analyse-Artefakte entfernt
+- **Leere Directories**: `batch/`, `v4-management/` entfernt
+- **Plugin-Infrastruktur**: `composer.json`, `phpcs.xml`, `README.md`, `CHANGELOG.md`
+- **Skills auf solar.local**: 3 Skills per MCP-Bridge installiert
+- **BLUEPRINT.md**: v0.8.0→v0.9.0, 3 bekannte Issues abgehakt
+- **HANDOFF.md**: Alte `novamira-adrians-extra` Referenzen bereinigt
+
+### Pipeline-Verbesserungen
+
+- **Rollback Cleanup**: `cleanupOldBackups(24)` + CLI `--cleanup --max-age 48`
+  - Verwaiste/korrupte Backups anhand Datei-mtime bereinigt
+- **Split-Large-Tree Timeout-Fallback**: Batching wenn Tree >400 Elemente / >800KB
+  - Batch 0: `elementor-set-content`, Batches 1+: gruppierte `elementor-add-element`
+- **Pipeline unstaged Changes**: 17 Modifikationen + 3 veraltete Dateien committed
+- **V4 Research-Dokumente**: `V4_DEEP_RESEARCH.md` + `V4_DESIGN_SCHEMA_REPORT.md`
+
+### Plugin CI/CD & Testing
+
+- **GitHub Actions CI**: `.github/workflows/novamira-adrianv2-ci.yml`
+  - 3 Jobs: PHPCS + Psalm + PHPUnit mit Composer-Cache
+- **PHPUnit Bootstrap**: `phpunit.xml.dist` + `tests/bootstrap.php` + `tests/mock-functions.php`
+- **20+ WordPress-Mock-Funktionen**: `add_action`, `add_filter`, `get_option`, `wp_insert_post`, etc.
+- **Smoke-Test**: `SetupV4FoundationTest.php` mit `#[CoversClass]` (PHPUnit 10+)
+- **`class-convert-kit-to-v4.php`** → `_deprecated/`
+
+### Plugin-Sync mit solar.local
+
+- `class-build-versioning.php` → WP-Plugin kopiert
+- `class-v4-color-contrast-22.php` → WP-Plugin kopiert
+- `bootstrap.php` (Deprecated-Pfad korrigiert) → WP-Plugin kopiert
+
+### Novamira-Plugins Repo
+
+- `emcp-tools/` + `novamira/` + `novamira-pro/` in separates Repo ausgelagert
+- Repo: `github.com/Adilinu94/Novamira-Plugins`
+
+### Test-Status
+- `npm test` → 52/52 ✅
+- `npm run test:e2e` → 12/12 ✅
+- `npm run test:all` → 64/64 ✅
+
 ## [v0.8.0] — 2026-06-12
 
 ### PIPELINE_AUDIT_REPORT — 15 Verbesserungen implementiert
