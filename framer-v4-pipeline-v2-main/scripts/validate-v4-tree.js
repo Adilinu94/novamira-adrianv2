@@ -3,7 +3,7 @@
  * validate-v4-tree.js
  *
  * Pre-build client validator for Elementor V4 Atomic Widget trees.
- * Runs 6 checks against a V4 element tree JSON file before sending
+ * Runs 7 checks against a V4 element tree JSON file before sending
  * to elementor-set-content.
  *
  * Usage:
@@ -13,13 +13,14 @@
  *
  * Exit code: 0 = pass, 1 = blocked (score < 85)
  *
- * The 6 checks (in order of error yield):
+ * The 7 checks (in order of error yield):
  *   1. $$type correctness — Plain values where $$type wrapper required
  *   2. Styles-classes binding — Local style IDs not in settings.classes
  *   3. Hyphen in style IDs       — Invalid style names that break the parser
  *   4. Responsive coverage       — Large values without mobile variant
  *   5. Widget/settings congruence — Wrong required key for widgetType
  *   6. Verbose style format      — Style entries missing id/type/label, null breakpoint, or plain-string custom_css
+ *   7. DOM depth                 — Max nesting depth (≤3=OK, 4-5=WARNING, ≥6=ERROR)
  */
 
 import fs from 'fs';
@@ -44,7 +45,7 @@ if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
   console.log('  --mode      strict (default, exit 1 if score < 85%) or warn (always exit 0)');
   console.log('  --schema    Path to prop-type-schema JSON (default: .commandcode/schemas/v4-prop-type-schema.json)');
   console.log('');
-  console.log('Runs 6 checks against a V4 element tree before sending to elementor-set-content.');
+  console.log('Runs 7 checks against a V4 element tree before sending to elementor-set-content.');
   process.exit(0);
 }
 
@@ -556,6 +557,59 @@ function checkVerboseStyleFormat(el, path, errors) {
   }
 }
 
+// ─── CHECK 7: DOM Depth ───────────────────────────────────────────
+
+/**
+ * P0-2 Fix: Validates maximum DOM nesting depth.
+ * Depth ≤ 3: OK (optimal for V4 Atomic)
+ * Depth 4-5: WARNING (performance degradation, consider Grid instead of Flex nesting)
+ * Depth ≥ 6: ERROR (server timeout risk, exponential reflow cost)
+ */
+function checkDomDepth(elements, errors, warnings) {
+  let maxDepth = 0;
+  let deepestPath = '';
+  let deepestEl = null; // Cache element ref during traversal (avoids fragile re-traversal)
+
+  function walk(el, depth, indexPath) {
+    if (!el || typeof el !== 'object') return;
+    if (depth > maxDepth) {
+      maxDepth = depth;
+      deepestPath = indexPath;
+      deepestEl = el;
+    }
+    // Use same child accessor priority as walkTree: children || elements
+    const children = el.children || el.elements || [];
+    for (let i = 0; i < children.length; i++) {
+      const cpath = indexPath ? `${indexPath}.${i}` : String(i);
+      walk(children[i], depth + 1, cpath);
+    }
+  }
+
+  const roots = Array.isArray(elements) ? elements : [elements];
+  for (let i = 0; i < roots.length; i++) {
+    walk(roots[i], 1, String(i));
+  }
+
+  // Use getElementType helper for consistent type detection (works for both camelCase and snake_case)
+  const elType = deepestEl ? (deepestEl.id || getElementType(deepestEl) || 'unknown') : 'root';
+
+  if (maxDepth >= 6) {
+    errors.push({
+      check: 7, rule: 'DOM-DEPTH', elementId: elType, path: deepestPath,
+      maxDepth,
+      message: `DOM depth ${maxDepth} >= 6 — server timeout risk and exponential reflow cost. Use CSS Grid (e-div-block) to reduce nesting.`,
+      fix: 'Replace deeply nested Flex containers with a single e-div-block using display:grid.'
+    });
+  } else if (maxDepth >= 4) {
+    warnings.push({
+      check: 7, rule: 'DOM-DEPTH', elementId: elType, path: deepestPath,
+      maxDepth,
+      message: `DOM depth ${maxDepth} >= 4 — performance degradation. Consider flattening with Grid.`,
+      fix: 'Review nested containers and use Grid where possible to reduce depth to ≤3.'
+    });
+  }
+}
+
 // ─── Check: Hardcoded hex (collected as warnings) ───────────────────
 
 function checkHardcodedHex(el, path, warnings) {
@@ -607,8 +661,11 @@ function validate() {
     checkHardcodedHex(el, path, warnings);
   });
 
-  // Scoring: 6 vital checks, each worth ~16.7%
-  // Checks 1-6 are "vital", responsive-coverage and hardcoded-hex are warnings only
+  // Check 7: DOM Depth (tree-level, runs once)
+  checkDomDepth(tree, errors, warnings);
+
+  // Scoring: 7 vital checks, each ~14.3%
+  // Checks 1-7 are "vital" (check 7 is DOM depth)
   const checkErrorCounts = {};
   const checkWarnCounts = {};
   for (const e of errors) {
@@ -620,9 +677,9 @@ function validate() {
     checkWarnCounts[ck] = (checkWarnCounts[ck] || 0) + 1;
   }
 
-  // Score: each of the 6 vital checks passes if it has 0 errors
-  const vitalPassed = [1, 2, 3, 4, 5, 6].filter(ck => !checkErrorCounts[`C${ck}`]).length;
-  const score = Math.round((vitalPassed / 6) * 100);
+  // Score: each of the 7 vital checks passes if it has 0 errors
+  const vitalPassed = [1, 2, 3, 4, 5, 6, 7].filter(ck => !checkErrorCounts[`C${ck}`]).length;
+  const score = Math.round((vitalPassed / 7) * 100);
   const passed = score >= PASS_THRESHOLD;
   const blocked = mode === 'strict' && !passed;
 
@@ -640,7 +697,7 @@ function validate() {
     schemaPath,
     summary: passed
       ? `PASSED: Score ${score}% >= ${PASS_THRESHOLD}%. ${totalErrors} errors, ${totalWarnings} warnings.`
-      : `BLOCKED: Score ${score}% < ${PASS_THRESHOLD}%. ${totalErrors} errors, ${totalWarnings} warnings across 6 checks.`,
+      : `BLOCKED: Score ${score}% < ${PASS_THRESHOLD}%. ${totalErrors} errors, ${totalWarnings} warnings across 7 checks.`,
     stats: {
       totalElements: countElements(tree),
       totalErrors,
@@ -654,12 +711,13 @@ function validate() {
 
   // Add check summaries
   const checkNames = {
-    C1: { name: '$$TYPE-CORRECTNESS', vital: true, weight: 17 },
-    C2: { name: 'STYLES-CLASSES-BINDING', vital: true, weight: 17 },
-    C3: { name: 'STYLE-ID-HYPHEN', vital: true, weight: 17 },
-    C4: { name: 'RESPONSIVE-COVERAGE', vital: true, weight: 16 },
-    C5: { name: 'WIDGET-SETTINGS', vital: true, weight: 17 },
-    C6: { name: 'VERBOSE-STYLE-FORMAT', vital: true, weight: 16 },
+    C1: { name: '$$TYPE-CORRECTNESS', vital: true, weight: 14 },
+    C2: { name: 'STYLES-CLASSES-BINDING', vital: true, weight: 14 },
+    C3: { name: 'STYLE-ID-HYPHEN', vital: true, weight: 14 },
+    C4: { name: 'RESPONSIVE-COVERAGE', vital: true, weight: 14 },
+    C5: { name: 'WIDGET-SETTINGS', vital: true, weight: 14 },
+    C6: { name: 'VERBOSE-STYLE-FORMAT', vital: true, weight: 14 },
+    C7: { name: 'DOM-DEPTH', vital: true, weight: 14 },
     placebo: { name: 'HARDCODED-HEX', vital: false, weight: 0 }
   };
 

@@ -7,7 +7,7 @@
  *
  * Unterstützte QA-Report-Formate:
  *   1. MCP-Format (layout.issues[], visual.issues[], action_items[])
- *      → von novamira/adrians-layout-audit, adrians-visual-qa etc.
+ *      → von novamira-adrianv2/layout-audit, novamira-adrianv2/visual-qa etc.
  *   2. visual-qa.js-Format (meta, results[], a11y)
  *      → von scripts/visual-qa.js mit axe-core A11y-Integration
  *
@@ -16,8 +16,8 @@
  *   Missing Alt Text → novamira-extra/add-alt-text-from-context
  *   SEO Meta Tags    → novamira-extra/generate-meta-tags
  *   Schema Markup    → novamira-extra/generate-schema-markup
- *   Layout/Style     → novamira/adrians-patch-element-styles
- *   Variable Drift   → novamira/adrians-patch-element-styles
+ *   Layout/Style     → novamira-adrianv2/patch-element-styles
+ *   Variable Drift   → novamira-adrianv2/patch-element-styles
  *
  * Usage:
  *   # Plan generieren (dry-run — keine Änderungen):
@@ -51,6 +51,9 @@ const { values: args } = parseArgs({
     output:            { type: 'string' },
     'fix-types':       { type: 'string', default: 'contrast,alt-text,seo,layout,variables' },
     'apply-results':   { type: 'string' },
+    'tree':            { type: 'string' },  // P1-3: V4 tree JSON für fixDomDepth
+    'fix-dom-depth':   { type: 'boolean', default: false }, // P1-3: DOM-Tiefen-Flattening aktivieren
+    'max-depth':       { type: 'string', default: '3' },   // P1-3: maximale DOM-Tiefe
     'dry-run':         { type: 'boolean', default: false },
     verbose:           { type: 'boolean', default: false },
     help:              { type: 'boolean', default: false },
@@ -114,6 +117,161 @@ if (!existsSync(args['qa-report'])) {
 
 const postId = args['post-id'] ? parseInt(args['post-id'], 10) : undefined;
 const enabledTypes = new Set(args['fix-types'].split(',').map(t => t.trim().toLowerCase()));
+const maxDepth = parseInt(args['max-depth'] || '3', 10);
+
+// ─── P1-3: DOM DEPTH FIX ─────────────────────────────────────────────────────
+
+/**
+ * Flacht Single-Child-Container rekursiv, um DOM-Tiefe zu reduzieren.
+ * Portiert die isPassThroughContainer / resolvePassThrough Logik aus
+ * convert-xml-to-v4.js für Post-Build Trees (V4 JSON Format).
+ *
+ * Ein Container ist "pass-through" wenn:
+ *   - Er genau 1 Child hat
+ *   - Er keine meaningful Layout-Props hat (gap, padding, bg, border-radius)
+ *   - Er keine non-default Positionierung hat
+ */
+function fixDomDepth(treeData, maxAllowedDepth = 3) {
+  function hasMeaningfulLayout(node) {
+    if (!node.styles || typeof node.styles !== 'object') return false;
+    for (const [, styleDef] of Object.entries(node.styles)) {
+      if (!styleDef || !Array.isArray(styleDef.variants)) continue;
+      for (const v of styleDef.variants) {
+        if (!v?.props) continue;
+        const keys = Object.keys(v.props);
+        // Props die Layout grundlegend ändern
+        if (keys.some(k => ['gap', 'padding', 'padding-top', 'padding-right',
+          'padding-bottom', 'padding-left', 'padding-inline-start', 'padding-inline-end',
+          'padding-block-start', 'padding-block-end',
+          'background-color', 'background', 'border-radius',
+          'max-width'].includes(k))) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  function getElementChildren(node) {
+    return node.elements || node.children || [];
+  }
+
+  function isPassThrough(node, depth) {
+    const elType = node.elType || node.widgetType || node.type;
+    // Nur Container können pass-through sein
+    if (!elType || !['e-flexbox', 'e-div-block', 'container'].includes(elType)) return false;
+    const children = getElementChildren(node);
+    if (children.length !== 1) return false;
+    if (hasMeaningfulLayout(node)) return false;
+    // P1-3: Nur flachen wenn Tiefe über dem Limit
+    if (depth <= maxAllowedDepth) return false;
+    return true;
+  }
+
+  let flattened = 0;
+
+  function flatten(node, depth) {
+    if (!node || typeof node !== 'object') return { node, depth };
+
+    // Rekursiv Kinder zuerst flachen (bottom-up)
+    const children = getElementChildren(node);
+    const newChildren = [];
+    for (const child of children) {
+      const result = flatten(child, depth + 1);
+      // Wenn das Kind selbst ein pass-through war, dessen Kinder direkt übernehmen
+      if (result.node && Array.isArray(getElementChildren(result.node))) {
+        const grandChildren = getElementChildren(result.node);
+        for (const gc of grandChildren) {
+          newChildren.push(gc);
+        }
+        if (grandChildren.length > 0) flattened++;
+      } else {
+        newChildren.push(result.node);
+      }
+    }
+
+    // Kinder zurücksetzen
+    if (node.elements) node.elements = newChildren;
+    else if (node.children) node.children = newChildren;
+
+    // Prüfe ob dieser Node selbst pass-through ist
+    const updatedChildren = getElementChildren(node);
+    if (isPassThrough(node, depth) && updatedChildren.length === 1) {
+      // Merge: Kind-Properties übernehmen, Node selbst entfernen
+      const child = updatedChildren[0];
+      // Child's classes mit Node's classes mergen
+      if (node.settings?.classes && child.settings) {
+        const nodeClasses = node.settings.classes;
+        const childClasses = child.settings.classes;
+        const nodeValues = Array.isArray(nodeClasses) ? nodeClasses : (nodeClasses?.value || []);
+        const childValues = Array.isArray(childClasses) ? childClasses : (childClasses?.value || []);
+        if (childClasses && Array.isArray(childClasses)) {
+          child.settings.classes = [...new Set([...nodeValues, ...childValues])];
+        } else if (childClasses?.value) {
+          child.settings.classes.value = [...new Set([...nodeValues, ...childClasses.value])];
+        }
+      }
+      flattened++;
+      return { node: child, depth };
+    }
+
+    return { node, depth };
+  }
+
+  const roots = Array.isArray(treeData) ? treeData : [treeData];
+  const newRoots = [];
+  for (const root of roots) {
+    const result = flatten(root, 1);
+    if (result.node) newRoots.push(result.node);
+  }
+
+  return { tree: newRoots.length === 1 ? newRoots[0] : newRoots, flattened };
+}
+
+// ─── --fix-dom-depth Modus (P1-3) ────────────────────────────────────────────
+
+if (args['fix-dom-depth']) {
+  if (!args.tree) {
+    console.error('Error: --tree <file> required for --fix-dom-depth');
+    process.exit(2);
+  }
+  const treePath = resolve(args.tree);
+  if (!existsSync(treePath)) {
+    console.error(`Error: Tree nicht gefunden: ${treePath}`);
+    process.exit(2);
+  }
+
+  let treeData;
+  try {
+    treeData = JSON.parse(readFileSync(treePath, 'utf8'));
+  } catch (e) {
+    console.error(`Error: Tree JSON ungültig: ${e.message}`);
+    process.exit(2);
+  }
+
+  // Count depth before
+  let depthBefore = 0;
+  function countDepth(node, d) {
+    if (!node || typeof node !== 'object') return;
+    if (d > depthBefore) depthBefore = d;
+    (node.elements || node.children || []).forEach(c => countDepth(c, d + 1));
+  }
+  (Array.isArray(treeData) ? treeData : [treeData]).forEach(r => countDepth(r, 1));
+
+  const { tree: flattenedTree, flattened } = fixDomDepth(treeData, maxDepth);
+
+  // Count depth after
+  let depthAfter = 0;
+  (Array.isArray(flattenedTree) ? flattenedTree : [flattenedTree]).forEach(r => countDepth(r, 1));
+
+  const outputPath = args.output || treePath;
+  writeFileSync(resolve(outputPath), JSON.stringify(flattenedTree, null, 2), 'utf8');
+
+  process.stderr.write(`[auto-fix] 🏗️  DOM-Depth: ${depthBefore} → ${depthAfter} (${flattened} Container geflattet)\n`);
+  process.stderr.write(`[auto-fix] Tree → ${outputPath}\n`);
+
+  process.exit(0);
+}
 const qaReport = JSON.parse(readFileSync(args['qa-report'], 'utf8'));
 
 if (!postId && !qaReport.post_id && !qaReport.meta?.post_id) {
@@ -142,7 +300,7 @@ function classifyIssues(report) {
           element_id: issue.element_id,
           severity: issue.severity,
           suggestion: issue.suggestion,
-          ability: 'novamira/adrians-patch-element-styles',
+          ability: 'novamira-adrianv2/patch-element-styles',
           params: {
             post_id: postId || report.post_id,
             element_id: issue.element_id,
@@ -163,7 +321,7 @@ function classifyIssues(report) {
           element_id: issue.element_id,
           severity: issue.severity,
           message: issue.message,
-          ability: 'novamira/adrians-patch-element-styles',
+          ability: 'novamira-adrianv2/patch-element-styles',
           params: {
             post_id: postId || report.post_id,
             element_id: issue.element_id,
@@ -201,7 +359,7 @@ function classifyIssues(report) {
       category: 'variables',
       subcategory: 'drift',
       count: report.variables.drift.length,
-      ability: 'novamira/adrians-patch-element-styles',
+      ability: 'novamira-adrianv2/patch-element-styles',
       params: {
         post_id: postId || report.post_id,
         patches: report.variables.drift.map(v => ({
@@ -304,7 +462,7 @@ function deduplicateIssues(issues) {
         phase: 'post-build-auto-fix',
         dry_run: !groupIssues[0].params.apply,
       });
-    } else if (ability === 'novamira/adrians-patch-element-styles') {
+    } else if (ability === 'novamira-adrianv2/patch-element-styles') {
       // Per-element calls (jeder element_id ist ein eigener Fix)
       // Gruppiere nach element_id um Duplikate zu vermeiden
       const seen = new Set();
@@ -362,16 +520,16 @@ function mapActionType(type) {
 
 function mapAbilityForType(type) {
   const map = {
-    layout: 'novamira/adrians-patch-element-styles',
-    style: 'novamira/adrians-patch-element-styles',
+    layout: 'novamira-adrianv2/patch-element-styles',
+    style: 'novamira-adrianv2/patch-element-styles',
     color: 'novamira-extra/fix-color-contrast',
     contrast: 'novamira-extra/fix-color-contrast',
     alt: 'novamira-extra/add-alt-text-from-context',
     'alt-text': 'novamira-extra/add-alt-text-from-context',
     seo: 'novamira-extra/generate-meta-tags',
-    variable: 'novamira/adrians-patch-element-styles',
+    variable: 'novamira-adrianv2/patch-element-styles',
   };
-  return map[type?.toLowerCase()] || 'novamira/adrians-patch-element-styles';
+  return map[type?.toLowerCase()] || 'novamira-adrianv2/patch-element-styles';
 }
 
 // ─── MAIN ─────────────────────────────────────────────────────────────────────
@@ -496,14 +654,19 @@ function showHelp() {
 post-build-auto-fix.js — QA-Report → Auto-Fix MCP-Plan
 
 Liest einen QA-Report und generiert MCP-Execution-Pläne für
-automatisch behebbare Issues mit Novamira-Abilities.
-
-Auto-Fix Kategorien:
+automatisch behebbare Issues mit Novamira-Abilities.  Auto-Fix Kategorien:
   contrast   → novamira-extra/fix-color-contrast
   alt-text   → novamira-extra/add-alt-text-from-context
   seo        → novamira-extra/generate-meta-tags + generate-schema-markup
-  layout     → novamira/adrians-patch-element-styles
-  variables  → novamira/adrians-patch-element-styles
+  layout     → novamira-adrianv2/patch-element-styles
+  variables  → novamira-adrianv2/patch-element-styles
+
+  # P1-3: DOM-Tiefen-Fix (--fix-dom-depth):
+  node scripts/post-build-auto-fix.js \\
+    --qa-report qa-report.json \\
+    --tree v4-tree.json \\
+    --fix-dom-depth \\
+    --output v4-tree-flattened.json
 
 Usage:
   node scripts/post-build-auto-fix.js \\

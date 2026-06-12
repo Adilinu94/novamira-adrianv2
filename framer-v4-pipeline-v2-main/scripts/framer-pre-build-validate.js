@@ -395,6 +395,81 @@ function g11_BackgroundColorGC() {
   };
 }
 
+// ── 13. GC_POTENTIAL (P1-5) ─────────────────────
+// Schätzt wie viele Style-Duplikate im Tree existieren und
+// ob sich GC-Generierung lohnt. Verhindert Builds mit
+// >20 Duplikaten (die manuell GCs brauchen).
+function g13_GcPotential() {
+  const styleHashes = new Map(); // hash → count
+  let totalStyledElements = 0;
+
+  for (const node of nodes) {
+    if (!node.styles || typeof node.styles !== 'object') continue;
+    for (const [styleId, styleDef] of Object.entries(node.styles)) {
+      if (styleId.startsWith('gc-')) continue; // GC-Referenzen zählen nicht
+      if (!styleDef || !Array.isArray(styleDef.variants)) continue;
+
+      const baseVariant = styleDef.variants.find(
+        v => v?.meta?.breakpoint === null || v?.meta?.breakpoint === 'desktop'
+      );
+      if (!baseVariant?.props) continue;
+
+      const props = baseVariant.props;
+      // Stabilen Hash der Props erstellen (nur keys + types, nicht values)
+      const propSig = Object.keys(props).sort().map(k => {
+        const v = props[k];
+        return `${k}:${v?.['$$type'] || typeof v}`;
+      }).join('|');
+      if (!propSig) continue;
+
+      // Simple string hash (no crypto needed for pre-build estimate)
+      let hash = 0;
+      for (let i = 0; i < propSig.length; i++) {
+        hash = ((hash << 5) - hash) + propSig.charCodeAt(i);
+        hash |= 0;
+      }
+      const hashKey = Math.abs(hash).toString(16).slice(0, 8);
+      styleHashes.set(hashKey, (styleHashes.get(hashKey) || 0) + 1);
+      totalStyledElements++;
+    }
+  }
+
+  // Zähle Duplikate (Hash mit count > 1)
+  const duplicatePatterns = [...styleHashes.entries()].filter(([, c]) => c > 1);
+  const totalDuplicates = duplicatePatterns.reduce((sum, [, c]) => sum + c - 1, 0);
+  const uniquePatterns = styleHashes.size - duplicatePatterns.length;
+
+  if (totalDuplicates === 0) {
+    return {
+      id: 'GC_POTENTIAL', status: 'PASS',
+      message: `Keine Style-Duplikate gefunden (${uniquePatterns} unique Patterns, ${totalStyledElements} styled elements). GCs nicht nötig.`,
+    };
+  }
+
+  const dupPct = Math.round((totalDuplicates / Math.max(totalStyledElements, 1)) * 100);
+
+  if (totalDuplicates > 20) {
+    return {
+      id: 'GC_POTENTIAL', status: 'FAIL', severity: 'error',
+      message: `${totalDuplicates} Style-Duplikate (${dupPct}%) — GC-Generierung PFLICHT vor Build. Führe convert-xml-to-v4.js mit --gc aus.`,
+      details: { totalStyledElements, uniquePatterns, duplicatePatterns: duplicatePatterns.length, totalDuplicates, recommendation: 'generate-global-classes.js --tree <tree> --apply' },
+    };
+  }
+
+  if (totalDuplicates > 10) {
+    return {
+      id: 'GC_POTENTIAL', status: 'WARN', severity: 'warning',
+      message: `${totalDuplicates} Style-Duplikate (${dupPct}%) — GC-Generierung empfohlen. Reduziert JSON um ~${dupPct}%.`,
+      details: { totalStyledElements, uniquePatterns, duplicatePatterns: duplicatePatterns.length, totalDuplicates },
+    };
+  }
+
+  return {
+    id: 'GC_POTENTIAL', status: 'PASS',
+    message: `${totalDuplicates} Style-Duplikate (${dupPct}%) — unter der Warn-Schwelle von 10.`,
+  };
+}
+
 // ── 12. IMAGE_SRC_FORMAT ────────────────────────
 function g12_ImageSrcFormat() {
   const invalid = [];
@@ -451,6 +526,7 @@ const guards = [
   g10_TabletVariants(),
   g11_BackgroundColorGC(),
   g12_ImageSrcFormat(),
+  g13_GcPotential(),
 ];
 
 // ─────────────────────────────────────────────

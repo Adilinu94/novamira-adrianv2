@@ -1,9 +1,56 @@
 # Changelog — framer-v4-pipeline-v2
 
+## [v0.8.0] — 2026-06-12
+
+### PIPELINE_AUDIT_REPORT — 15 Verbesserungen implementiert
+
+Basierend auf [PIPELINE_AUDIT_REPORT](./PIPELINE_AUDIT_REPORT.md) (Deep Research, Post-4943).
+
+#### 🔴 P0 — Kritisch
+| Fix | Datei | Änderung |
+|-----|-------|----------|
+| P0-1 | `convert-xml-to-v4.js` | `--gc` Default `true`, `--no-gc` zum Deaktivieren |
+| P0-2 | `validate-v4-tree.js` | 7. Vital-Check `DOM_DEPTH`: ≤3 OK, 4-5 Warnung, ≥6 Error |
+| P0-3 | `lib/framer-utils.js` | `wrapHtmlContent` bereits vorhanden — kein Code nötig |
+
+#### 🟡 P1 — Performance / Korrektheit
+| Fix | Datei | Änderung |
+|-----|-------|----------|
+| P1-1 | `generate-global-classes.js` | `--apply` Modus: lokale Tree-Deduplizierung ohne MCP |
+| P1-2 | `convert-xml-to-v4.js` | RC-08: Root-Container (`depth===0`) vor Positions-Filterung geschützt |
+| P1-3 | `post-build-auto-fix.js` | `fixDomDepth()` + `--fix-dom-depth`: Single-Child-Container rekursiv flatten |
+| P1-4 | `run-post-build-qa.js` | `--tree` + 4 Deep-Checks: GC_COVERAGE, DOM_DEPTH, RESPONSIVE_COVERAGE, UNUSED_STYLES |
+| P1-5 | `framer-pre-build-validate.js` | 13. Guard `GC_POTENTIAL`: warnt bei >10, blockt Build bei >20 Duplikaten |
+
+#### 🟢 P2 — DX / Robustheit
+| Fix | Datei | Änderung |
+|-----|-------|----------|
+| P2-1 | `auto-scale-responsive.js` | Bereits gut (RC-14 + RC-19) — kein Fix nötig |
+| P2-2 | `check-v4-requirements.js` | `--server-info`: php_max_input_vars, memory_limit, Tree-Größe |
+| P2-3 | `parallel-pre-build.js` | `--gc-output` Flag statt hardcoded `gc-plan.json` |
+| P2-4 | `framer-animation-extractor.js` | RC-20: +6 Mappings (rotate, skew, opacity+translateX/scale/rotate, Triple) |
+| P2-5 | `tests/pipeline.test.js` | 5 neue Test-Blöcke für P0/P1 (52→52 Tests, alle grün) |
+| P2-6 | `extract-responsive-breakpoints.js` | `--container-queries` + `extractAtBlock()` für @container Support |
+| P2-7 | `section-compare.js` | Bereits ausgereift — kein Fix nötig |
+
+### Skill Update
+- `novamira-skill/elementor-v4-build.md` → v2.0: 13 neue Pipeline-Features, 4 Deep-Checks, 9 Fehler-Einträge
+- `novamira-ability-code-injector/` → archiviert als `_archived-novamira-ability-code-injector/`
+
+### Ability-Migration abgeschlossen
+- ~120+ alte `novamira/adrians-*` → `novamira-adrianv2/*` in 20+ Dateien aktualisiert
+- `PIPELINE_AUDIT_REPORT.md`: 1 letzter alter Eintrag gefixt
+- `V4_DEEP_RESEARCH.md`, `V4_DESIGN_SCHEMA_REPORT.md`: bereinigt
+
+### Test-Status
+- `npm test` → 52/52 ✅
+- `npm run test:e2e` → 12/12 ✅
+- `npm run test:all` → 64/64 ✅
+
 ## [v0.7.0] — 2026-06-12
 
 ### Added
-- `html-to-widget-plan.js`: Brücke zu `novamira/adrians-html-to-elementor-widget-plan` mit `--execute` (McpBridge) + Plan-Fallback + Wizard-Integration
+- `html-to-widget-plan.js`: Brücke zu `novamira-adrianv2/html-to-elementor-widget-plan` mit `--execute` (McpBridge) + Plan-Fallback + Wizard-Integration
 - `widget-plan` + `widget-plan-execute` npm-Scripts
 - `lint:version` Script: checkt `package.json` Version gegen `CHANGELOG.md`
 - `.env.example`: 16 Variablen (Workspace, MCP, Validation, Performance)

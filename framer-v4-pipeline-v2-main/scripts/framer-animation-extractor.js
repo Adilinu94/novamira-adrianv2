@@ -261,6 +261,175 @@ function extractScriptBlocks(htmlContent) {
   return scripts;
 }
 
+// ───────────────────────────────────────────────────────────────────────────────
+// RC-20: CSS TRANSITION → V4 INTERACTION MAPPER
+// ───────────────────────────────────────────────────────────────────────────────
+
+// ───────────────────────────────────────────────────────────────────────────────
+// RC-20: CSS TRANSITION → V4 INTERACTION MAPPER
+// P2-4: Erweitert um transform.rotate, transform.skew, und kombinierte Mappings
+// ───────────────────────────────────────────────────────────────────────────────
+
+const TRANSITION_TO_V4_MAP = {
+  // opacity transitions → Fade effects
+  opacity: { effect: 'fade', entrance: true, duration_scale: 1.0 },
+  // transform:translateY → Slide effects
+  'transform.translateY': { effect: 'slide-up', entrance: true },
+  'transform.translateX': { effect: 'slide-left', entrance: true, duration_scale: 0.8 },
+  // scale transforms
+  'transform.scale': { effect: 'zoom', entrance: true, duration_scale: 1.2 },
+  // P2-4: Rotation transforms
+  'transform.rotate': { effect: 'rotate-in', entrance: true, duration_scale: 0.9 },
+  // P2-4: Skew transforms
+  'transform.skew': { effect: 'skew-in', entrance: true, duration_scale: 0.7 },
+  // Combined
+  'opacity+transform.translateY': { effect: 'fade-slide-up', entrance: true, duration_scale: 1.0 },
+  // P2-4: Combined opacity + translateX
+  'opacity+transform.translateX': { effect: 'fade-slide-left', entrance: true, duration_scale: 0.9 },
+  // P2-4: Combined opacity + scale
+  'opacity+transform.scale': { effect: 'fade-zoom', entrance: true, duration_scale: 1.1 },
+  // P2-4: Combined opacity + rotate
+  'opacity+transform.rotate': { effect: 'fade-rotate-in', entrance: true, duration_scale: 0.8 },
+  // P2-4: Triple compound: opacity + translateX + scale
+  'opacity+transform.translateX+transform.scale': { effect: 'fade-slide-zoom', entrance: true, duration_scale: 1.0 },
+};
+
+function mapTransitionToV4Interaction(declarations, selector) {
+  const props = Object.keys(declarations);
+  const hasOpacity = props.includes('opacity');
+  const hasTransform = props.includes('transform');
+  const duration = declarations['transition-duration']
+    || declarations['animation-duration']
+    || declarations['transition']?.match(/([\d.]+)s/)?.[1]
+    || '0.3';
+  const delay = declarations['transition-delay'] || '0';
+  const easing = declarations['transition-timing-function']
+    || declarations['animation-timing-function']
+    || 'ease';
+
+  // Build compound key for mapping
+  const parts = [];
+  if (hasOpacity) parts.push('opacity');
+  if (hasTransform) {
+    // P2-4: Detect specific transform functions in the value
+    const transformVal = declarations['transform'] || '';
+    if (/\brotate\b/i.test(transformVal)) parts.push('transform.rotate');
+    else if (/\bskew\b/i.test(transformVal)) parts.push('transform.skew');
+    else if (/\bscale\b/i.test(transformVal)) parts.push('transform.scale');
+    else if (/\btranslateX\b/i.test(transformVal)) parts.push('transform.translateX');
+    else parts.push('transform.translateY'); // default assumption
+  }
+  const key = parts.join('+') || 'opacity';
+
+  const mapping = TRANSITION_TO_V4_MAP[key] || TRANSITION_TO_V4_MAP['opacity'];
+
+  return {
+    selector,
+    effect: mapping.effect,
+    entrance: mapping.entrance,
+    duration: parseFloat(duration),
+    delay: parseFloat(delay),
+    easing,
+    // V4-compatible output
+    v4_interaction: {
+      type: 'entrance',
+      animation: mapping.effect,
+      duration: Math.round(parseFloat(duration) * 1000),
+      delay: Math.round(parseFloat(delay) * 1000),
+      easing: mapEasingToGSAP(easing),
+    },
+    // Reverse (exit) variant
+    exit: {
+      animation: mapping.effect.replace('up', 'down').replace('left', 'right'),
+      reverse: true,
+    },
+    // Mobile hint: reduce duration by 30% on small screens
+    mobile: {
+      duration: Math.round(parseFloat(duration) * 700),
+    },
+  };
+}
+
+function mapEasingToGSAP(cssEasing) {
+  const map = {
+    'ease': 'power2.out',
+    'ease-in': 'power2.in',
+    'ease-out': 'power2.out',
+    'ease-in-out': 'power2.inOut',
+    'linear': 'none',
+    'cubic-bezier(0.4, 0, 0.2, 1)': 'power3.out',
+    'cubic-bezier(0, 0, 0.2, 1)': 'power4.out',
+  };
+  return map[cssEasing] || 'power2.out';
+}
+
+function buildTransitionInteractions(animatedRules) {
+  if (animatedRules.length === 0) return [];
+
+  const interactions = [];
+  for (const rule of animatedRules) {
+    if (rule.type === 'transition') {
+      const interaction = mapTransitionToV4Interaction(rule.declarations, rule.selector);
+      interactions.push(interaction);
+    }
+  }
+
+  if (interactions.length === 0) return [];
+
+  // Generate V4-compatible interaction plan
+  const gsapCode = generateGSAPInteractionCode(interactions);
+
+  return [{
+    title: `V4 Interactions (${interactions.length} elements)`,
+    type: 'gsap',
+    code: gsapCode,
+    location: 'site_wide_footer',
+    gsap_version: '3.12.5',
+    gsap_plugins: ['ScrollTrigger'],
+    description: `${interactions.length} CSS transitions → V4 GSAP interactions (RC-20)`,
+    interactions,
+    tags: ['v4', 'interactions', 'gsap', 'scrolltrigger', 'rc-20'],
+    on_conflict: 'replace',
+    priority: 25,
+  }];
+}
+
+function generateGSAPInteractionCode(interactions) {
+  const lines = [
+    '// RC-20: Framer CSS Transitions → Elementor V4 GSAP Interactions',
+    `// Generated from ${interactions.length} CSS transition rules`,
+    '// GSAP + ScrollTrigger required',
+    '// ⚠️  Selectors are from Framer CSS — MUST be mapped to V4 Elementor DOM classes before use.',
+    '//     Framer: .framer-abc123 → V4: .elementor-element-<id> oder GC-Klasse',
+    '',
+    'document.addEventListener("DOMContentLoaded", () => {',
+    '  gsap.registerPlugin(ScrollTrigger);',
+    '',
+  ];
+
+  for (const ix of interactions) {
+    const sel = ix.selector.replace(/"/g, '\\"');
+    lines.push(`  // ${ix.effect} — ${ix.selector}`);
+    lines.push(`  gsap.from("${sel}", {`);
+    lines.push(`    opacity: 0,`);
+    if (ix.effect.includes('slide')) lines.push(`    y: 30,`);
+    if (ix.effect.includes('zoom')) lines.push(`    scale: 0.95,`);
+    lines.push(`    duration: ${ix.duration},`);
+    lines.push(`    delay: ${ix.delay},`);
+    lines.push(`    ease: "${ix.v4_interaction.easing}",`);
+    lines.push(`    scrollTrigger: {`);
+    lines.push(`      trigger: "${sel}",`);
+    lines.push(`      start: "top 90%",`);
+    lines.push(`      toggleActions: "play none none reverse",`);
+    lines.push(`    },`);
+    lines.push(`  });`);
+    lines.push('');
+  }
+
+  lines.push('});');
+  return lines.join('\n');
+}
+
 // ─── SNIPPET BUILDERS ─────────────────────────────────────────────────────────
 
 function buildLocation(isPostSpecific) {
@@ -403,6 +572,12 @@ if (keyframes.length > 0) {
 }
 if (animatedRules.length > 0) {
   snippets.push(...buildAnimationRulesSnippet(animatedRules, isPostSpecific));
+  // RC-20: Add V4 interaction mappings for CSS transitions
+  const transitionInteractions = buildTransitionInteractions(animatedRules);
+  if (transitionInteractions.length > 0) {
+    snippets.push(...transitionInteractions);
+    log(`  RC-20: ${transitionInteractions[0]?.interactions?.length || 0} transition→V4 interactions mapped`);
+  }
 }
 if (appears.length > 0) {
   snippets.push(...buildFramerAppearSnippet(appears, isPostSpecific));
@@ -423,6 +598,7 @@ const result = {
       css_snippets: snippets.filter(s => s.type === 'css').length,
       gsap_snippets: snippets.filter(s => s.type === 'gsap').length,
       js_snippets: snippets.filter(s => s.type === 'js').length,
+      interaction_snippets: snippets.filter(s => s.tags?.includes('rc-20')).length,
       keyframes: keyframes.length,
       framer_appears: appears.length,
       animated_rules: animatedRules.length,

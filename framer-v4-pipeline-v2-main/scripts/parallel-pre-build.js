@@ -25,6 +25,7 @@ const { values: args } = parseArgs({
   options: {
     tree:        { type: 'string' },
     'export-dir':{ type: 'string' },
+    'gc-output':  { type: 'string' },  // P2-3: custom path for gc-plan.json
     verbose:     { type: 'boolean', default: false },
     help:        { type: 'boolean', default: false },
   },
@@ -35,6 +36,7 @@ if (args.help) {
   console.log('parallel-pre-build.js — Parallel execution of 5 independent pre-build steps');
   console.log('  --tree FILE       v4-tree.json');
   console.log('  --export-dir DIR  FramerExport directory');
+  console.log('  --gc-output FILE  Custom path for gc-plan.json (default: gc-plan.json)');
   console.log('  --verbose         Detailed logs');
   process.exit(0);
 }
@@ -59,9 +61,11 @@ if (!existsSync(treePath)) {
   process.exit(1);
 }
 
+const gcOutput = args['gc-output'] || 'gc-plan.json';
+
 const steps = [
   { label: 'convert',             script: 'scripts/convert-xml-to-v4.js',   args: ['--xml', treePath.replace('.json', '.xml'), '--output', treePath] },
-  { label: 'gc-generate',         script: 'scripts/generate-global-classes.js', args: ['--tree', treePath, '--output', 'gc-plan.json'] },
+  { label: 'gc-generate',         script: 'scripts/generate-global-classes.js', args: ['--tree', treePath, '--output', gcOutput] },
   { label: 'asset-upload',        script: 'scripts/asset-to-wp-media.js',   args: ['--assets-dir', resolve(exportDir, 'assets'), '--output', 'image-map.json'] },
   { label: 'token-extract',       script: 'scripts/design-token-extractor.js', args: ['--html', resolve(exportDir, 'index.html'), '--output', resolve(exportDir, 'tokens', 'token-mapping.json')] },
   { label: 'widget-plan',         script: 'scripts/html-to-widget-plan.js', args: ['--html', resolve(exportDir, 'index.html'), '--output', resolve(exportDir, 'tokens', 'widget-plan.json')] },

@@ -33,17 +33,25 @@ import {
 
 const { values: args } = parseArgs({
   options: {
-    xml:          { type: 'string' },
-    'xml-string': { type: 'string' },
-    tokens:       { type: 'string' },
-    fonts:        { type: 'string' },
-    'image-map':  { type: 'string' },
-    output:       { type: 'string' },
-    validate:     { type: 'boolean', default: false },
-    verbose:      { type: 'boolean', default: false },
+    xml:            { type: 'string' },
+    'xml-string':   { type: 'string' },
+    tokens:         { type: 'string' },
+    fonts:          { type: 'string' },
+    'image-map':    { type: 'string' },
+    output:         { type: 'string' },
+    validate:       { type: 'boolean', default: false },
+    verbose:        { type: 'boolean', default: false },
+    'gc':           { type: 'boolean', default: true },
+    'no-gc':        { type: 'boolean', default: false },
+    'gc-output':    { type: 'string' },
+    'gc-min-dups':  { type: 'string', default: '2' },
+    'tokens-report': { type: 'boolean', default: false },
   },
   strict: false,
 });
+
+// P0-1 Fix: --no-gc overrides gc default (true)
+if (args['no-gc']) args.gc = false;
 
 // Help
 if (process.argv.includes('--help') || process.argv.includes('-h')) { console.log('Usage: node scripts/convert-xml-to-v4.js [--help for options]'); console.log('Run with --help for full usage.'); process.exit(0); }
@@ -186,9 +194,43 @@ const SVG_NATIVE_TAGS = new Set([
   'clippath', 'lineargradient', 'radialgradient', 'stop', 'pattern',
 ]);
 
+// Framer Component Name → V4 Widget Type Mapping (RC-16 Fix)
+// Explicitly maps known Framer component patterns to corresponding V4 atomic widgets.
+// Falls through to heuristic detection if no match found.
+// NOTE: 'svg' and 'icon' are NOT mapped here — SVG detection is handled by
+// SVG_NATIVE_TAGS check below (avoids false positives on containers named "Icons").
+const COMPONENT_TYPE_MAP = {
+  'heading': 'e-heading',
+  'paragraph': 'e-paragraph',
+  'button': 'e-button',
+  'cta': 'e-button',
+  'image': 'e-image',
+  'img': 'e-image',
+  'divider': 'e-divider',
+  'card': 'e-flexbox',
+  'stats': 'e-flexbox',
+  'testimonial': 'e-flexbox',
+  'hero': 'e-flexbox',
+  'section': 'e-flexbox',
+};
+
 function determineWidgetType(attrs, xmlNode) {
   const name    = (attrs.name || '').toLowerCase();
   const tagName = (xmlNode?.tagName || '').toLowerCase();
+
+  // ── Explicit Component Name Mapping (RC-16 Fix) ──
+  // Check if the Framer component name maps directly to a V4 widget type.
+  // Falls through to heuristic if the map entry's guard condition isn't met.
+  for (const [pattern, widgetType] of Object.entries(COMPONENT_TYPE_MAP)) {
+    if (name === pattern || name.includes(pattern)) {
+      // Guard: button entry only applies when href is present.
+      // Use break (not continue) so guarded-out matches fall through to the existing heuristic.
+      if (widgetType === 'e-button' && !attrs.href && name !== 'button' && name !== 'cta') break;
+      // Guard: image entry only applies when image source is present
+      if (widgetType === 'e-image' && !attrs.backgroundImage && !attrs.src) break;
+      return widgetType;
+    }
+  }
 
   // ── SVG: ONLY when the tag itself is a native SVG element ──
   // Framer uses PascalCase tags (Frame, Text, Image, Stack) — SVG uses lowercase.
@@ -209,6 +251,31 @@ function determineWidgetType(attrs, xmlNode) {
     return 'e-heading'; // default for text nodes
   }
   if (attrs.backgroundImage || attrs.src) return 'e-image';
+
+  // RC-09 Grid Detection: multi-child containers with grid-like naming patterns
+  // or explicit grid attributes should use e-div-block with display:grid.
+  // This enables proper 2D layouts (cards, stats, galleries) instead of
+  // forcing everything into nested flexboxes.
+  const childCount = (xmlNode?.children || []).filter(c => c.tagName && c.tagName !== '_root').length;
+  if (childCount >= 2) {
+    if (/\b(grid|gallery|cards|stats|features|logos|columns)\b/.test(name)) {
+      return 'e-div-block';
+    }
+    // Detect repeated child patterns (2+ children with same or similar names)
+    // which suggests a grid/card layout rather than sequential flexbox
+    const childNames = (xmlNode.children || [])
+      .filter(c => c.tagName && c.tagName !== '_root')
+      .map(c => (c.attrs?.name || '').toLowerCase().replace(/\d+$/, ''))
+      .filter(n => n);
+    const uniqueNames = new Set(childNames);
+    // If children share a naming pattern (e.g., "card-1", "card-2", "card-3"),
+    // this is likely a grid layout. 3+ children with 2 or fewer unique base names
+    // strongly suggests a repeated pattern.
+    if (childCount >= 3 && uniqueNames.size <= 2) {
+      return 'e-div-block';
+    }
+  }
+
   return 'e-flexbox'; // default container
 }
 
@@ -351,7 +418,17 @@ function resolveLineHeight(lineHeight) {
 // PROPERTY MAPPER
 // ─────────────────────────────────────────────
 
-function buildStyleProps(attrs, widgetType, tokenMapping, fontResolution, imageMap) {
+// RC-09 Helper: determines grid-template-columns value from attrs + child structure
+function detectGridLayout(xmlNode, attrs) {
+  const childCount = (xmlNode?.children || []).filter(c => c.tagName && c.tagName !== '_root').length;
+  if (childCount < 2) return null;
+  if (childCount === 2) return '1fr 1fr';
+  if (childCount === 3) return '1fr 1fr 1fr';
+  if (childCount === 4) return '1fr 1fr 1fr 1fr';
+  return 'repeat(auto-fit, minmax(250px, 1fr))';
+}
+
+function buildStyleProps(attrs, widgetType, tokenMapping, fontResolution, imageMap, xmlNode = null, depth = 0) {
   const props  = {};
   const { stackDirection, stackGap, padding, maxWidth, width, height,
           backgroundColor, 'background-color': bgColor,
@@ -361,8 +438,36 @@ function buildStyleProps(attrs, widgetType, tokenMapping, fontResolution, imageM
           'font-weight': fontWeight, 'line-height': lineHeight,
           'letter-spacing': letterSpacing, opacity } = attrs;
 
-  // ── Layout (flexbox) ──
+  // ── Layout (flexbox / grid) ──
+  if (widgetType === 'e-div-block') {
+    // RC-09 Fix: Grid support for multi-child containers
+    // detectGridLayout determines grid-template-columns from child count
+    const gridColumns = detectGridLayout(xmlNode, attrs);
+    if (gridColumns) {
+      props['display'] = wrapType('string', 'grid');
+      props['grid-template-columns'] = wrapType('string', gridColumns);
+    } else {
+      props['display'] = wrapType('string', 'block');
+    }
+    if (stackGap) props['gap'] = wrapSize(stackGap);
+    if (padding)  props['padding'] = wrapDimensions(padding);
+    if (maxWidth && isDimensionValue(maxWidth)) props['max-width'] = wrapSize(maxWidth);
+    if (width    && isDimensionValue(width))    props['width']    = wrapSize(width);
+    if (height   && isDimensionValue(height))   props['height']   = wrapSize(height);
+
+    const bgVal = backgroundColor || bgColor;
+    if (bgVal) {
+      const resolved = resolveColor(bgVal, tokenMapping);
+      if (resolved) {
+        warn(`background.color '${bgVal}' muss als Global Class gesetzt werden (Bug 3). \u00dcbersprungen.`);
+      }
+    }
+  }
+
   if (widgetType === 'e-flexbox' || widgetType === 'e-button') {
+    // RC-02 Fix: Explicit display property required by Elementor V4
+    // flex-direction without display:flex is ineffective CSS
+    props['display'] = wrapType('string', 'flex');
     if (stackDirection) {
       props['flex-direction'] = stackDirection === 'vertical' ? 'column' : 'row';
     }
@@ -411,16 +516,50 @@ function buildStyleProps(attrs, widgetType, tokenMapping, fontResolution, imageM
   if (br) props['border-radius'] = wrapBorderRadius(br);
 
   // ── Positioning ──
+  // RC-08 Fix: Only set position:absolute for true overlay elements.
+  // Framer uses absolute positioning as its canvas default — this should NOT
+  // be carried over to Elementor V4 which expects normal DOM flow with flex/grid.
+  // Heuristic: only set position when it's NOT 'absolute' (relative/fixed/sticky),
+  // OR when the element has explicit offset values (top/right/bottom/left) that
+  // indicate it's an intentional overlay (e.g. text on top of an image).
+  // P1-2 Fix: Root containers (depth=0) always keep their positioning to
+  // preserve Framer's intended layout structure at the top level.
+  // NOTE: Uses !== undefined (not truthiness) so zero values like top:"0" work.
   if (position) {
-    props['position'] = wrapType('string', position);
-    if (top)    props['top']    = wrapSize(top);
-    if (right)  props['right']  = wrapSize(right);
-    if (bottom) props['bottom'] = wrapSize(bottom);
-    if (left)   props['left']   = wrapSize(left);
+    const hasExplicitOffsets = top !== undefined || right !== undefined || bottom !== undefined || left !== undefined;
+    // Always keep non-absolute positioning (relative, fixed, sticky)
+    // Always keep root container positioning (depth === 0)
+    // For absolute: only keep if there are explicit offsets (true overlay) or it's the root
+    if (position !== 'absolute' || hasExplicitOffsets || depth === 0) {
+      props['position'] = wrapType('string', position);
+      if (top !== undefined)    props['top']    = wrapSize(top);
+      if (right !== undefined)  props['right']  = wrapSize(right);
+      if (bottom !== undefined) props['bottom'] = wrapSize(bottom);
+      if (left !== undefined)   props['left']   = wrapSize(left);
+    }
   }
 
   // ── Opacity ──
   if (opacity !== undefined) props['opacity'] = wrapUnitless(opacity);
+
+  // RC-11 Fix: Minimum default styles for widgets with empty props.
+  // Widgets with {} props render with browser defaults (Times New Roman, no sizing).
+  // Set sane fallbacks that match typical Framer designs.
+  if (Object.keys(props).length === 0) {
+    if (widgetType === 'e-heading') {
+      props['font-family'] = wrapType('string', 'Inter');
+      props['font-size'] = wrapSize('32px');
+      props['font-weight'] = wrapType('string', '600');
+      props['color'] = wrapColor('#111111');
+    } else if (widgetType === 'e-paragraph') {
+      props['font-family'] = wrapType('string', 'Inter');
+      props['font-size'] = wrapSize('16px');
+      props['line-height'] = wrapUnitless(1.6);
+      props['color'] = wrapColor('#444444');
+    } else if (widgetType === 'e-button') {
+      props['color'] = wrapColor('#ffffff');
+    }
+  }
 
   return props;
 }
@@ -447,17 +586,30 @@ function uniqueWidgetId(raw) {
   return n === 1 ? base : `${base}-${n}`;
 }
 
-// Bug 3 Fix: detect pass-through containers (single child, no layout props set)
+// Bug 3 Fix: detect pass-through containers (single child, no meaningful layout props set)
+// RC-07 Fix: position, width, and height at 100% are Framer canvas defaults that
+// don't fundamentally change layout. When a container has exactly 1 child and only
+// these default props, flatten it to reduce DOM depth.
 function isPassThroughContainer(xmlNode, widgetType) {
   if (widgetType !== 'e-flexbox') return false;
   const { attrs } = xmlNode;
-  const hasLayoutProps = attrs.stackGap || attrs.padding || attrs.maxWidth
-    || attrs.width || attrs.height || attrs.backgroundColor || attrs['background-color']
-    || attrs.borderRadius || attrs['border-radius'] || attrs.position;
-  if (hasLayoutProps) return false;
   const meaningfulChildren = (xmlNode.children || []).filter(c => c.tagName && c.tagName !== '_root');
   // Only flatten if exactly one child (pure wrapper)
-  return meaningfulChildren.length === 1;
+  if (meaningfulChildren.length !== 1) return false;
+
+  // These props genuinely change layout and block pass-through
+  const hasMeaningfulLayout = attrs.stackGap || attrs.padding || attrs.maxWidth
+    || attrs.backgroundColor || attrs['background-color']
+    || attrs.borderRadius || attrs['border-radius'];
+  if (hasMeaningfulLayout) return false;
+
+  // position, width, and height are Framer canvas defaults — only block
+  // pass-through when they're explicitly non-default (non-absolute, non-100%)
+  if (attrs.position && attrs.position !== 'absolute') return false;
+  if (attrs.width && attrs.width !== '100%' && attrs.width !== '100vw') return false;
+  if (attrs.height && attrs.height !== '100%' && attrs.height !== '100vh') return false;
+
+  return true;
 }
 
 // Bug 3 Fix (improved): recursively unwrap a chain of pass-through containers.
@@ -497,6 +649,11 @@ function extractComponentText(attrs) {
     if (str.startsWith('http') || str.startsWith('/') || str.startsWith('#')) continue; // URL / style path / hash
     if (/^-?\d*\.?\d+$/.test(str)) continue;     // Numeric
     if (/^[a-zA-Z0-9_-]{8,15}$/.test(str) && !str.includes(' ')) continue; // Gen-ID pattern
+    // RC-04 Fix: Skip XML/HTML fragments that were incorrectly extracted as text.
+    // Framer's internal XML attributes (e.g. 'backgroundColor="..." overflow="clip" />')
+    // end up here when the heuristic scans component attrs. Real text never contains
+    // self-closing tags or attribute-style equals.
+    if (str.includes('/>') || str.includes('</') || /^[a-zA-Z]+="[^"]*"(\s+[a-zA-Z]+="[^"]*")*\s*\/?>/.test(str) || /\w+="[^"]*"/.test(str)) continue;
 
     // Pick longest — component text attrs are typically the longest readable string
     if (!bestText || str.length > bestText.length) {
@@ -528,8 +685,8 @@ function convertNode(xmlNode, tokenMapping, fontResolution, imageMap, depth = 0)
 
   log(`[${'  '.repeat(depth)}] ${name} → ${widgetType} (${styleId})`);
 
-  // Build base props
-  const props = buildStyleProps(enrichedAttrs, widgetType, tokenMapping, fontResolution, imageMap);
+  // Build base props (pass xmlNode for grid detection in RC-09)
+  const props = buildStyleProps(enrichedAttrs, widgetType, tokenMapping, fontResolution, imageMap, xmlNode, depth);
 
 
 
@@ -540,6 +697,10 @@ function convertNode(xmlNode, tokenMapping, fontResolution, imageMap, depth = 0)
 
   if (widgetType === 'e-flexbox') {
     settings.tag = attrs.tag || (depth === 0 ? 'section' : 'div');
+  }
+
+  if (widgetType === 'e-div-block') {
+    settings.tag = attrs.tag || 'div';
   }
 
   if (widgetType === 'e-button') {
@@ -609,10 +770,147 @@ function convertNode(xmlNode, tokenMapping, fontResolution, imageMap, depth = 0)
   const ATOMIC_ELEMENT_TYPES = new Set(['e-flexbox', 'e-div-block']);
   const elType = ATOMIC_ELEMENT_TYPES.has(widgetType) ? widgetType : 'widget';
 
-  const node = { elType, widgetType, id: widgetId, settings, styles };
+  // RC-01 Fix: type field required by server-side batch-build-page.php
+  // Without 'type', the server falls back to 'container' for ALL widgets
+  // Also: elementor-set-content uses elType+widgetType, batch-build-page uses type
+  // Adding 'type' makes the output compatible with BOTH abilities (RC-03 Fix)
+  const node = { type: widgetType, elType, widgetType, id: widgetId, settings, styles };
   if (v4Children.length > 0) node.elements = v4Children;
 
   return node;
+}
+
+// ─────────────────────────────────────────────
+// RC-13: TOKEN USAGE ANALYZER
+// ─────────────────────────────────────────────
+
+function analyzeTokenUsage(treeNodes) {
+  const report = {
+    hardcoded_colors: new Map(),
+    hardcoded_fonts: new Map(),
+    hardcoded_sizes: new Map(),
+    total_elements: 0,
+    total_hardcoded: 0,
+    suggestions: [],
+  };
+
+  function walk(node) {
+    if (!node || typeof node !== 'object') return;
+    // Only count actual element nodes (have widgetType or elType)
+    if (node.widgetType || node.elType) {
+      report.total_elements++;
+    }
+
+    const styles = node.styles || {};
+    for (const [styleId, styleDef] of Object.entries(styles)) {
+      const variants = styleDef.variants || [];
+      for (const variant of variants) {
+        const props = variant.props || {};
+        for (const [prop, value] of Object.entries(props)) {
+          if (!value || typeof value !== 'object') continue;
+
+          // Detect hardcoded colors
+          if (value['$$type'] === 'color') {
+            const hex = (value.value?.hex || value.value || '').toString();
+            if (hex && !hex.startsWith('e-gv-') && !hex.startsWith('var(')) {
+              const key = hex.slice(0, 7);
+              if (!report.hardcoded_colors.has(key)) {
+                report.hardcoded_colors.set(key, { value: hex, count: 0, elements: [], prop });
+              }
+              const entry = report.hardcoded_colors.get(key);
+              entry.count++;
+              if (entry.elements.length < 5) entry.elements.push(node.id || node.widgetType || '?');
+              report.total_hardcoded++;
+            }
+          }
+
+          // Detect hardcoded font-families
+          if (prop === 'font-family') {
+            if (value['$$type'] === 'string') {
+              const family = (value.value || '').toString();
+              if (family && !family.startsWith('e-gv-') && !family.startsWith('var(')) {
+                if (!report.hardcoded_fonts.has(family)) {
+                  report.hardcoded_fonts.set(family, { value: family, count: 0, elements: [] });
+                }
+                const entry = report.hardcoded_fonts.get(family);
+                entry.count++;
+                if (entry.elements.length < 5) entry.elements.push(node.id || node.widgetType || '?');
+                report.total_hardcoded++;
+              }
+            } else if (value['$$type'] === 'gv-font') {
+              // GV font reference — already using design tokens, good!
+            }
+          }
+
+          // Detect hardcoded sizes (px values that could be tokens)
+          if (prop === 'font-size' || prop === 'width' || prop === 'height' || prop === 'gap' || prop === 'padding') {
+            if (value['$$type'] === 'size') {
+              const sizeVal = (value.value?.size || value.value || '').toString();
+              const pxMatch = sizeVal.match(/^(\d+)px$/);
+              if (pxMatch) {
+                const px = parseInt(pxMatch[1], 10);
+                if (px >= 16 && px % 4 === 0) {
+                  const key = `${prop}:${sizeVal}`;
+                  if (!report.hardcoded_sizes.has(key)) {
+                    report.hardcoded_sizes.set(key, { prop, value: sizeVal, count: 0 });
+                  }
+                  report.hardcoded_sizes.get(key).count++;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    const children = node.elements || [];
+    for (const child of children) walk(child);
+  }
+
+  const roots = Array.isArray(treeNodes) ? treeNodes : [treeNodes];
+  for (const root of roots) walk(root);
+
+  // Generate suggestions
+  const colorEntries = [...report.hardcoded_colors.entries()]
+    .sort((a, b) => b[1].count - a[1].count);
+  const fontEntries = [...report.hardcoded_fonts.entries()]
+    .sort((a, b) => b[1].count - a[1].count);
+
+  for (const [hex, data] of colorEntries) {
+    if (data.count >= 2) {
+      report.suggestions.push({
+        type: 'color',
+        severity: data.count >= 3 ? 'high' : 'medium',
+        value: data.value,
+        occurrences: data.count,
+        action: `Erstelle e-gv-color Variable für ${data.value} (${data.count}x verwendet). Ersetze alle Hardcodes mit var(--gv-<id>).`,
+      });
+    }
+  }
+
+  for (const [family, data] of fontEntries) {
+    if (data.count >= 2) {
+      report.suggestions.push({
+        type: 'font',
+        severity: data.count >= 3 ? 'high' : 'medium',
+        value: family,
+        occurrences: data.count,
+        action: `Erstelle e-gv-font Variable für "${family}" (${data.count}x verwendet).`,
+      });
+    }
+  }
+
+  // Summary
+  report.summary = {
+    unique_colors: report.hardcoded_colors.size,
+    unique_fonts: report.hardcoded_fonts.size,
+    unique_sizes: report.hardcoded_sizes.size,
+    total_hardcoded_values: report.total_hardcoded,
+    high_severity_suggestions: report.suggestions.filter(s => s.severity === 'high').length,
+    medium_severity_suggestions: report.suggestions.filter(s => s.severity === 'medium').length,
+  };
+
+  return report;
 }
 
 // ─────────────────────────────────────────────
@@ -725,6 +1023,75 @@ if (args.validate && outputPath) {
 // Print to stdout when no --output
 if (!args.output) {
   process.stdout.write(output + '\n');
+}
+
+// ─────────────────────────────────────────────
+// RC-13: TOKENS REPORT
+// ─────────────────────────────────────────────
+
+let tokensReport = null;
+if (args['tokens-report'] && v4Tree.length > 0) {
+  tokensReport = analyzeTokenUsage(v4Tree);
+  const tokensReportPath = path.join(path.dirname(outputPath || '.'), 'tokens-report.json');
+  try {
+    const reportOutput = {
+      generated_at: new Date().toISOString(),
+      source: args.xml || 'inline',
+      summary: tokensReport.summary,
+      hardcoded_colors: Object.fromEntries(tokensReport.hardcoded_colors),
+      hardcoded_fonts: Object.fromEntries(tokensReport.hardcoded_fonts),
+      suggestions: tokensReport.suggestions,
+    };
+    fs.writeFileSync(tokensReportPath, JSON.stringify(reportOutput, null, 2), 'utf8');
+    process.stderr.write(`\n📊 Tokens Report → ${path.relative(process.cwd(), tokensReportPath)}\n`);
+    process.stderr.write(`   ${tokensReport.summary.unique_colors} unique hardcoded colors, ${tokensReport.summary.unique_fonts} fonts, ${tokensReport.summary.total_hardcoded_values} total\n`);
+    if (tokensReport.suggestions.length > 0) {
+      process.stderr.write(`   🔔 ${tokensReport.suggestions.length} token suggestions (${tokensReport.summary.high_severity_suggestions} high-priority)\n`);
+      for (const s of tokensReport.suggestions.filter(s => s.severity === 'high').slice(0, 3)) {
+        process.stderr.write(`     • ${s.type}: ${s.value.slice(0,40)} (${s.occurrences}x)\n`);
+      }
+    }
+  } catch (e) {
+    process.stderr.write(`⚠ Tokens report write failed: ${e.message}\n`);
+  }
+}
+
+// ─────────────────────────────────────────────
+// RC-12: GLOBAL CLASSES INTEGRATION
+// ─────────────────────────────────────────────
+
+if (args.gc && outputPath) {
+  const gcScript = path.join(__dirname, 'generate-global-classes.js');
+  const gcOutput = args['gc-output'] || path.join(path.dirname(outputPath), 'global-class-plan.json');
+  const minDups = args['gc-min-dups'] || '2';
+
+  if (!fs.existsSync(gcScript)) {
+    process.stderr.write('⚠ generate-global-classes.js not found — skipping GC analysis.\n');
+  } else {
+    process.stderr.write(`\n🔍 Running Global Classes analysis (min-dups=${minDups})…\n`);
+    try {
+      const gcResult = spawnSync('node', [gcScript, '--tree', outputPath, '--min-dups', minDups, '--output', gcOutput], {
+        stdio: 'pipe', encoding: 'utf8', timeout: 30000,
+      });
+      if (gcResult.stderr) {
+        const gcStderr = gcResult.stderr.toString();
+        const summaryMatch = gcStderr.match(/\[gen-gc\] (\d+) GC-Vorschläge/);
+        if (summaryMatch) {
+          process.stderr.write(`✅ GC Analysis: ${summaryMatch[1]} Global Class suggestions\n`);
+          process.stderr.write(`   Plan → ${path.relative(process.cwd(), gcOutput)}\n`);
+        } else {
+          const noDupMatch = gcStderr.match(/Keine Duplikate gefunden/);
+          if (noDupMatch) {
+            process.stderr.write('ℹ️  No duplicate styles found — all styles are unique. GCs not needed.\n');
+          } else {
+            process.stderr.write(gcStderr.slice(0, 500) + '\n');
+          }
+        }
+      }
+    } catch (e) {
+      process.stderr.write(`⚠ GC analysis failed: ${e.message}\n`);
+    }
+  }
 }
 
 // Cleanup temp dir

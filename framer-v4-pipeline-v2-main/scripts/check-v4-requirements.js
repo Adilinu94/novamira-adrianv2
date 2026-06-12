@@ -47,6 +47,7 @@ const { values: args } = parseArgs({
     'stdin':            { type: 'boolean', default: false },
     'auto-call':        { type: 'boolean', default: false },
     'guidance':         { type: 'boolean', default: false },
+    'server-info':      { type: 'string' },  // P2-2: JSON file with phpinfo() data
     'help':             { type: 'boolean', default: false },
   },
   strict: false,
@@ -152,6 +153,114 @@ if (!setupData || typeof setupData !== 'object') {
   process.stderr.write(`${C.red}FEHLER: Keine gültigen Check-Setup-Daten. setupData ist ${typeof setupData}.${C.reset}\n`);
   process.stderr.write(`${C.yellow}Bitte elementor-check-setup erneut ausführen und Ausgabe als JSON speichern.${C.reset}\n`);
   process.exit(2);
+}
+
+// ─── P2-2: Server Capacity Checks (separate mode) ────────────────────────────
+
+if (args['server-info']) {
+  processServerInfo(args['server-info']);
+  // processServerInfo exits internally
+}
+
+function processServerInfo(filePath) {
+  if (!existsSync(filePath)) {
+    process.stderr.write(`${C.red}FEHLER: Server-Info Datei nicht gefunden: ${filePath}${C.reset}\n`);
+    process.exit(2);
+  }
+  let info;
+  try {
+    info = JSON.parse(readFileSync(filePath, 'utf8'));
+    info = info.data ?? info;
+  } catch (e) {
+    process.stderr.write(`${C.red}FEHLER: Ungültiges JSON in ${filePath}: ${e.message}${C.reset}\n`);
+    process.exit(2);
+  }
+
+  process.stderr.write(`\n${C.bold}Server-Kapazitäts-Checks${C.reset}\n\n`);
+
+  let warnings = 0;
+  let errors = 0;
+
+  // php_max_input_vars: critical for large trees (>500KB)
+  const maxInputVars = parseInt(info.php_max_input_vars || info.max_input_vars || info.max_input_nesting_level || '0', 10);
+  if (maxInputVars > 0) {
+    if (maxInputVars < 2000) {
+      process.stderr.write(`  ${C.red}✗ php_max_input_vars: ${maxInputVars} — KRITISCH (min 2000, empfohlen 5000+)${C.reset}\n`);
+      process.stderr.write(`    ${C.yellow}Fix:${C.reset} php.ini → max_input_vars = 5000 → Server neustarten\n\n`);
+      errors++;
+    } else if (maxInputVars < 5000) {
+      process.stderr.write(`  ${C.yellow}⚠ php_max_input_vars: ${maxInputVars} — ausreichend, 5000+ empfohlen für große Trees${C.reset}\n`);
+      warnings++;
+    } else {
+      process.stderr.write(`  ${C.green}✓ php_max_input_vars: ${maxInputVars}${C.reset}\n`);
+    }
+  } else {
+    process.stderr.write(`  ${C.yellow}⚠ php_max_input_vars: Konnte Wert nicht ermitteln${C.reset}\n`);
+    warnings++;
+  }
+
+  // memory_limit
+  const memoryLimitRaw = info.memory_limit || info.wp_memory_limit || '0';
+  const memoryLimitMB = parseMemoryLimit(memoryLimitRaw);
+  if (memoryLimitMB > 0) {
+    if (memoryLimitMB < 128) {
+      process.stderr.write(`  ${C.red}✗ memory_limit: ${memoryLimitRaw} — KRITISCH (min 128M, empfohlen 256M+)${C.reset}\n`);
+      process.stderr.write(`    ${C.yellow}Fix:${C.reset} wp-config.php → define('WP_MEMORY_LIMIT', '256M'); → Server neustarten\n\n`);
+      errors++;
+    } else if (memoryLimitMB < 256) {
+      process.stderr.write(`  ${C.yellow}⚠ memory_limit: ${memoryLimitRaw} — ausreichend, 256M+ empfohlen${C.reset}\n`);
+      warnings++;
+    } else {
+      process.stderr.write(`  ${C.green}✓ memory_limit: ${memoryLimitRaw}${C.reset}\n`);
+    }
+  } else {
+    process.stderr.write(`  ${C.yellow}⚠ memory_limit: Konnte Wert nicht ermitteln${C.reset}\n`);
+    warnings++;
+  }
+
+  // Tree size estimate check (if available)
+  const treeSizeKB = info.estimated_tree_size_kb || info.tree_size_kb || 0;
+  if (treeSizeKB > 0) {
+    if (treeSizeKB > 500) {
+      process.stderr.write(`  ${C.red}✗ Tree-Größe geschätzt: ${treeSizeKB}KB — überschreitet empfohlenes 500KB-Limit${C.reset}\n`);
+      process.stderr.write(`    ${C.yellow}Empfehlung:${C.reset} --gc anwenden um Tree zu deduplizieren\n\n`);
+      errors++;
+    } else if (treeSizeKB > 300) {
+      process.stderr.write(`  ${C.yellow}⚠ Tree-Größe geschätzt: ${treeSizeKB}KB — GC-Deduplizierung empfohlen${C.reset}\n`);
+      warnings++;
+    }
+  }
+
+  process.stderr.write('\n');
+
+  if (errors > 0) {
+    process.stderr.write(`${C.red}${C.bold}Server-Kapazität unzureichend — ${errors} kritische(s) Problem(e)${C.reset}\n`);
+    process.stderr.write(`${C.yellow}Bitte Server-Konfiguration anpassen und erneut prüfen.${C.reset}\n\n`);
+    process.exit(1);
+  }
+
+  process.stderr.write(`${C.green}${C.bold}✓ Server-Kapazität ausreichend${C.reset}`);
+  if (warnings > 0) process.stderr.write(` (${warnings} Warnung(en))`);
+  process.stderr.write('\n\n');
+
+  process.stdout.write(JSON.stringify({
+    pass: true,
+    warnings,
+    errors,
+    php_max_input_vars: maxInputVars || null,
+    memory_limit_mb: memoryLimitMB || null,
+    estimated_tree_size_kb: treeSizeKB || null,
+  }, null, 2) + '\n');
+
+  process.exit(0);
+}
+
+function parseMemoryLimit(raw) {
+  const match = String(raw).match(/^(\d+)\s*([MG])?$/i);
+  if (!match) return 0;
+  const num = parseInt(match[1], 10);
+  const unit = (match[2] || 'M').toUpperCase();
+  return unit === 'G' ? num * 1024 : num;
 }
 
 // ─── Checks ──────────────────────────────────────────────────────────────────
