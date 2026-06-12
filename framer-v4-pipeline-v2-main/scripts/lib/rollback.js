@@ -236,6 +236,82 @@ Der agentResults-Parameter erwartet:
     }
     return count;
   }
+
+  /**
+   * Bereinigt Backups älter als maxAgeHours Stunden.
+   *
+   * @param {number} [maxAgeHours=24] - Maximales Backup-Alter in Stunden.
+   * @returns {{ deleted: number, kept: number, files: string[] }}
+   */
+  cleanupOldBackups(maxAgeHours = 24) {
+    const cutoff = Date.now() - (maxAgeHours * 60 * 60 * 1000);
+    const backups = this.listBackups();
+    let deleted = 0;
+    const kept = [];
+
+    for (const backup of backups) {
+      const age = backup.timestamp ? new Date(backup.timestamp).getTime() : 0;
+      if (age < cutoff) {
+        const backupPath = this._backupPath(backup.postId);
+        try {
+          fs.unlinkSync(backupPath);
+          deleted++;
+          process.stderr.write(
+            `[rollback] Deleted old backup for post ${backup.postId} ` +
+            `(${Math.round((Date.now() - age) / 3600000)}h old)\n`
+          );
+        } catch (err) {
+          process.stderr.write(`[rollback] Failed to delete ${backupPath}: ${err.message}\n`);
+        }
+      } else {
+        kept.push(backup.postId);
+      }
+    }
+
+    // ── Zusaetzlich: Verwaiste korrupte Backups anhand Datei-mtime loeschen ──
+    if (fs.existsSync(this.dir)) {
+      const allFiles = fs.readdirSync(this.dir).filter(f => f.startsWith('backup-') && f.endsWith('.json'));
+      const knownPaths = new Set(backups.map(b => this._backupPath(b.postId)));
+      for (const file of allFiles) {
+        const filePath = path.join(this.dir, file);
+        if (knownPaths.has(filePath)) continue; // already handled
+        try {
+          const stat = fs.statSync(filePath);
+          if (stat.mtimeMs < cutoff) {
+            fs.unlinkSync(filePath);
+            deleted++;
+            process.stderr.write(`[rollback] Deleted orphaned/corrupt backup: ${file} (${Math.round((Date.now() - stat.mtimeMs) / 3600000)}h old)\n`);
+          }
+        } catch { /* skip unreadable files */ }
+      }
+    }
+
+    process.stderr.write(
+      `[rollback] Cleanup complete: ${deleted} deleted, ${kept.length} kept (< ${maxAgeHours}h)\n`
+    );
+
+    return {
+      deleted,
+      kept: kept.length,
+      deleted_ids: backups.filter(b => {
+        const age = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+        return age < cutoff;
+      }).map(b => b.postId),
+      kept_ids: kept,
+    };
+  }
 }
 
 export default RollbackManager;
+
+// ── CLI: Cleanup aufrufen ────────────────────────────────────────────────────
+
+if (process.argv.includes('--cleanup')) {
+  const hoursIdx = process.argv.indexOf('--max-age');
+  const maxAge = hoursIdx !== -1 ? parseInt(process.argv[hoursIdx + 1], 10) || 24 : 24;
+
+  const rb = new RollbackManager();
+  const result = rb.cleanupOldBackups(maxAge);
+  process.stdout.write(JSON.stringify(result, null, 2) + '\n');
+  process.exit(0);
+}

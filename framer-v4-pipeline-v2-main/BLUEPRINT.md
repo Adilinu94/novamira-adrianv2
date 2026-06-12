@@ -184,8 +184,8 @@ framer-v4-pipeline-v2/
 
 ### Bekannte Issues (Low Priority)
 - [x] GitHub Token in Remote-URL — ✅ Bereinigt (2026-06-12)
-- [ ] Rollback Cleanup — Keine automatische Bereinigung alter Backups (>24h)
-- [ ] split-large-tree.js Timeout — Kein Fallback für übergroße Trees
+- [x] Rollback Cleanup — ✅ `cleanupOldBackups(24)` + CLI `--cleanup` (2026-06-12)
+- [x] split-large-tree.js Timeout — ✅ Batch-Fallback (>400 Elemente / >800KB) (2026-06-12)
 
 ### Phase 1.4+ — CI, Performance, UX, Advanced, A11y (abgeschlossen ✅)
 - [x] **1.4:** `.github/workflows/ci.yml` — 7 Jobs (test, e2e, schema, mcp-mock, visual, lint, syntax)
