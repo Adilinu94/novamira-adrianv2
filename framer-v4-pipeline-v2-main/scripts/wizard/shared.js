@@ -171,6 +171,65 @@ export async function readJsonIfExists(filePath) {
 }
 
 /**
+ * Schreibt eine JSON-Datei (atomic via tmp + rename).
+ *
+ * @param {string} filePath
+ * @param {object} data
+ */
+export async function writeJsonAtomic(filePath, data) {
+  const tmp = filePath + '.tmp';
+  await fs.writeFile(tmp, JSON.stringify(data, null, 2), 'utf8');
+  await fs.rename(tmp, filePath);
+}
+
+// ── FramerExport Cache (Sprint 14) ────────────────────────────────────
+
+const CACHE_FILE = path.join(pipelineDir, '.framer-export-cache.json');
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 Stunde
+
+/**
+ * Prüft ob ein FramerExport für eine URL bereits gecached ist.
+ * Returns { cached: true, exportDir } wenn gültig, sonst { cached: false }.
+ *
+ * @param {string} framerUrl - Die zu exportierende Framer-URL
+ * @param {boolean} forceRefresh - Bei true immer neu exportieren
+ * @returns {Promise<{cached: boolean, exportDir?: string}>}
+ */
+export async function checkFramerExportCache(framerUrl, forceRefresh = false) {
+  if (forceRefresh) return { cached: false };
+
+  const cache = await readJsonIfExists(CACHE_FILE);
+  if (!cache || cache.url !== framerUrl) return { cached: false };
+
+  // Prüfe ob Export-Verzeichnis noch existiert
+  if (cache.exportDir && existsSync(cache.exportDir)) {
+    const stat = await fs.stat(cache.exportDir);
+    const age = Date.now() - stat.mtimeMs;
+
+    if (age < CACHE_TTL_MS) {
+      return { cached: true, exportDir: cache.exportDir };
+    }
+  }
+
+  return { cached: false };
+}
+
+/**
+ * Schreibt einen FramerExport-Cache-Eintrag.
+ *
+ * @param {string} framerUrl
+ * @param {string} exportDir
+ */
+export async function writeFramerExportCache(framerUrl, exportDir) {
+  if (!existsSync(exportDir)) return;
+  await writeJsonAtomic(CACHE_FILE, {
+    url: framerUrl,
+    exportDir,
+    timestamp: new Date().toISOString(),
+  });
+}
+
+/**
  * Interaktive Error-Recovery-Prompt.
  * Bietet [R]etry, [S]kip, [F]ix, [A]bort.
  *

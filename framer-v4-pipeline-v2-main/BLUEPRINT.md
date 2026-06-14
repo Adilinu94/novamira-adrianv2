@@ -1,6 +1,6 @@
 # 🚀 Framer → Elementor V4 Pipeline V2: Master Blueprint
 
-> **Version:** v0.17.0 | **Stand:** 2026-06-14
+> **Version:** v0.18.0 | **Stand:** 2026-06-14
 
 ## 🎯 Overview
 Ziel: Umsetzung eines stabilen, token-effizienten Framer-zu-V4-Workflows basierend auf einer **3-Wege-Symbiose**:
@@ -158,6 +158,7 @@ framer-v4-pipeline-v2/
 - [x] **ENH-16 FramerExport CLI**: Wizard --non-interactive läuft vollständig durch. FramerExport v4.3.8, spawnWithRetry mit shell:true-Eskalation für Bash/Windows-Kompatibilität.
 - [x] **Sprint 10**: CI PHPUnit Hardening, WCAG Contrast Merge, Deploy-Script, CI PHPUnit Integration (8. Job)
 - [x] **Sprint 11**: Archive Cleanup (7 files), CI Consolidation (11 jobs in 1 workflow)
+- [x] **Sprint 12**: Plugin README (REST endpoints, test infra, deploy docs)
 - [x] GSD-Projekt: `.planning/` mit PROJECT.md, REQUIREMENTS.md, ROADMAP.md, PLAN-1-7.md, STATE.md, config.json
 - [x] `--help` Blocks: A1, A2, A3 mit einheitlichem CLI-Pattern (parseArgs help Option)
 

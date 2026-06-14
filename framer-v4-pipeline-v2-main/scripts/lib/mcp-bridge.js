@@ -13,9 +13,9 @@
  *                        arguments: { ability_name: "...", parameters: {...} } }
  *
  *   Alle Novamira-Abilities laufen DURCH den Adapter:
- *     ❌ Direkt:   novamira-adrianv2/export-design-system {}
+ *     ❌ Direkt:   novamira/adrians-export-design-system {}
  *     ✅ Korrekt:  mcp-adapter-execute-ability {
- *                    ability_name: "novamira-adrianv2/export-design-system",
+ *                    ability_name: "novamira/adrians-export-design-system",
  *                    parameters: {}
  *                  }
  *
@@ -174,10 +174,11 @@ export class McpBridge {
 
   /**
    * @param {object} options
-   * @param {string} options.mcpUrl       URL zum MCP-Endpoint (z.B. http://solar.local/wp-json/mcp/novamira)
-   * @param {string} [options.authHeader] Authorization-Header (Basic <b64> oder Bearer <token>)
-   * @param {string} [options.wpUrl]      WordPress Base-URL für REST-Fallback
+   * @param {string} options.mcpUrl         URL zum MCP-Endpoint (z.B. http://solar.local/wp-json/mcp/novamira)
+   * @param {string} [options.authHeader]   Authorization-Header (Basic <b64> oder Bearer <token>)
+   * @param {string} [options.wpUrl]        WordPress Base-URL für REST-Fallback
    * @param {number} [options.timeout=120000] Timeout pro Request in ms
+   * @param {number} [options.concurrency=3]  Max parallele Calls (MCP_CONCURRENCY env var)
    * @param {boolean} [options.verbose=false] Debug-Logging aktivieren
    */
   constructor(options = {}) {
@@ -187,6 +188,12 @@ export class McpBridge {
     this.timeout      = options.timeout || 120000;
     this.verbose      = options.verbose || false;
 
+    // FIX-7: Concurrency-Limit für callParallel()
+    // Sprint 14: Default auf 5 erhöht (modern machines handle more parallel WP requests).
+    // Überschreibbar via Option, MCP_CONCURRENCY env var, oder MCP_CONCURRENCY_PROFILE.
+    this.defaultConcurrency = options.concurrency
+      || McpBridge._resolveConcurrency();
+
     // Session-Management
     this._sessionId    = null;
     this._sessionExpiry = 0;
@@ -195,6 +202,26 @@ export class McpBridge {
     // Cache für read-only Abilities
     this._cache = new Map();
     this._cacheTtl = 5 * 60 * 1000; // 5 Minuten
+  }
+
+  // ── Concurrency Resolution (Sprint 14) ─────────────────────────────────
+
+  /**
+   * Resolves the default concurrency value from environment.
+   * Priority: MCP_CONCURRENCY > MCP_CONCURRENCY_PROFILE > default (5).
+   *
+   * MCP_CONCURRENCY_PROFILE presets:
+   *   low    = 2  (shared hosting, single-core)
+   *   medium = 5  (default, VPS/local dev)
+   *   high   = 10 (dedicated server)
+   */
+  static _resolveConcurrency() {
+    const explicit = parseInt(process.env.MCP_CONCURRENCY || '', 10);
+    if (!isNaN(explicit) && explicit > 0) return explicit;
+
+    const profile = process.env.MCP_CONCURRENCY_PROFILE || 'medium';
+    const presets = { low: 2, medium: 5, high: 10 };
+    return presets[profile] || 5;
   }
 
   // ── Static Factory ───────────────────────────────────────────────────────
@@ -345,7 +372,7 @@ export class McpBridge {
    * Diese Methode ist der zentrale Einstiegspunkt für alle MCP-Calls.
    * Scripts rufen mcp.call('novamira/<ability>', { params }) auf.
    *
-   * @param {string}       ability         Ability-Name (z.B. "novamira-adrianv2/greet")
+   * @param {string}       ability         Ability-Name (z.B. "novamira/adrians-greet")
    * @param {object}       [params={}]     Ability-Parameter
    * @param {object}       [options={}]    Call-Optionen
    * @param {boolean}      [options.cache=true]  Cache für read-only Abilities verwenden
@@ -556,6 +583,71 @@ export class McpBridge {
     return results;
   }
 
+  /**
+   * Führt mehrere MCP-Calls mit konfigurierbarem Concurrency-Limit parallel aus.
+   *
+   * Alle Calls laufen parallel, aber maximal `concurrency` Calls sind
+   * gleichzeitig aktiv. Dies verhindert Race-Conditions und PHP-Timeout
+   * bei lokalen WordPress-Instanzen ohne Load-Balancer (FIX-7).
+   *
+   * Ohne Concurrency-Limit feuert Promise.allSettled ALLE Calls simultan —
+   * bei 10+ Requests gegen solar.local kann das zu PHP max_execution_time-
+   * Abbrüchen oder Session-Timeout führen.
+   *
+   * Der interne Worker-Pool verwendet kein externes Package (p-limit) —
+   * die Concurrency-Steuerung ist mit ~20 Zeilen selbst implementiert.
+   *
+   * Nutze callParallel() für unabhängige Pre-Build-Schritte (z.B. parallel-pre-build.js).
+   * Nutze callSequence() wenn Calls voneinander abhängen oder serielle Ausführung nötig ist.
+   *
+   * @param {Array<{ability: string, params?: object}>} calls
+   * @param {object} [options]
+   * @param {number} [options.concurrency=3]  Maximale Anzahl paralleler Calls
+   * @returns {Promise<Array<{status: 'fulfilled'|'rejected', value?: any, reason?: any, ability: string}>>}
+   */
+  async callParallel(calls, options = {}) {
+    if (!Array.isArray(calls) || calls.length === 0) return [];
+
+    const concurrency = Math.max(1, options.concurrency ?? this.defaultConcurrency ?? 3);
+
+    process.stderr.write(
+      `[mcp-bridge] callParallel: ${calls.length} calls gestartet (concurrency=${concurrency})\n`
+    );
+
+    const start = Date.now();
+    const results = new Array(calls.length);
+    let cursor = 0;
+
+    // Worker: greift den nächsten Call aus der Queue und führt ihn aus
+    const worker = async () => {
+      while (cursor < calls.length) {
+        const idx = cursor++;
+        const { ability, params = {} } = calls[idx];
+        try {
+          const value = await this.call(ability, params);
+          results[idx] = { status: 'fulfilled', value, ability };
+        } catch (reason) {
+          results[idx] = { status: 'rejected', reason, ability };
+        }
+      }
+    };
+
+    // Starte `concurrency` Worker parallel
+    const workers = Array.from(
+      { length: Math.min(concurrency, calls.length) },
+      () => worker()
+    );
+    await Promise.all(workers);
+
+    const ms = Date.now() - start;
+    const failed = results.filter(r => r.status === 'rejected').length;
+    process.stderr.write(
+      `[mcp-bridge] callParallel: fertig in ${ms}ms ` +
+      `(${calls.length - failed} ok, ${failed} fehler, concurrency=${concurrency})\n`
+    );
+    return results;
+  }
+
   // ── Spezialisierte Methoden ──────────────────────────────────────────────
 
   /**
@@ -580,57 +672,57 @@ export class McpBridge {
     }),
 
     // Design System
-    'novamira-adrianv2/export-design-system': (p) => ({
+    'novamira/adrians-export-design-system': (p) => ({
       url: `/wp-json/novamira/v1/design-system/export${p.what ? `?what=${encodeURIComponent(p.what)}` : ''}`,
       method: 'GET',
     }),
 
     // Media
-    'novamira-adrianv2/media-upload': (p) => ({
+    'novamira/adrians-media-upload': (p) => ({
       url: '/wp-json/novamira/v1/media/upload',
       method: 'POST', body: p,
     }),
-    'novamira-adrianv2/batch-media-upload': (p) => ({
+    'novamira/adrians-batch-media-upload': (p) => ({
       url: '/wp-json/novamira/v1/media/batch-upload',
       method: 'POST', body: p,
     }),
 
     // Foundation (cache-verboten)
-    'novamira-adrianv2/setup-v4-foundation': (p) => ({
+    'novamira/adrians-setup-v4-foundation': (p) => ({
       url: '/wp-json/novamira/v1/elementor/foundation',
       method: 'POST', body: p,
     }),
 
     // QA & Audit
-    'novamira-adrianv2/layout-audit': (p) => ({
+    'novamira/adrians-layout-audit': (p) => ({
       url: `/wp-json/novamira/v1/elementor/layout-audit/${p.post_id}`,
       method: 'GET',
     }),
-    'novamira-adrianv2/visual-qa': (p) => ({
+    'novamira/adrians-visual-qa': (p) => ({
       url: `/wp-json/novamira/v1/elementor/visual-qa/${p.post_id}`,
       method: 'GET',
     }),
-    'novamira-adrianv2/responsive-audit': (p) => ({
+    'novamira/adrians-responsive-audit': (p) => ({
       url: `/wp-json/novamira/v1/elementor/responsive-audit/${p.post_id}`,
       method: 'GET',
     }),
-    'novamira-adrianv2/variable-audit': (p) => ({
+    'novamira/adrians-variable-audit': (p) => ({
       url: '/wp-json/novamira/v1/elementor/variable-audit',
       method: 'POST', body: p,
     }),
 
     // Variables
-    'novamira-adrianv2/batch-create-variables': (p) => ({
+    'novamira/adrians-batch-create-variables': (p) => ({
       url: '/wp-json/novamira/v1/elementor/variables/batch',
       method: 'POST', body: p,
     }),
 
     // Global Classes
-    'novamira-adrianv2/add-global-class-variant': (p) => ({
+    'novamira/adrians-add-global-class-variant': (p) => ({
       url: '/wp-json/novamira/v1/elementor/class-variant',
       method: 'POST', body: p,
     }),
-    'novamira-adrianv2/apply-variable-to-class': (p) => ({
+    'novamira/adrians-apply-variable-to-class': (p) => ({
       url: '/wp-json/novamira/v1/elementor/class-variable',
       method: 'POST', body: p,
     }),
@@ -709,7 +801,7 @@ export class McpBridge {
   // ── Spezialisierte Methoden ──────────────────────────────────────────────
 
   /**
-   * Batch-Media-Upload via novamira-adrianv2/batch-media-upload.
+   * Batch-Media-Upload via novamira/adrians-batch-media-upload.
    *
    * @param {Array<{filename: string, mime_type: string, content_base64: string}>} files
    * @returns {Promise<object>} Upload-Ergebnis mit wp_media_id-Mappings
@@ -721,7 +813,7 @@ export class McpBridge {
 
     this._log(`Batch-Media-Upload: ${files.length} Dateien...`);
 
-    return this.call('novamira-adrianv2/batch-media-upload', { files }, {
+    return this.call('novamira/adrians-batch-media-upload', { files }, {
       cache: false,
       maxRetries: 1, // Weniger Retries für Uploads (Datenvolumen)
     });
@@ -808,9 +900,9 @@ if (process.argv.includes('--self-test')) {
     }
 
     // 3. Verbindungstest via greet
-    console.log('\n🔌 Teste Verbindung (novamira-adrianv2/greet)...');
+    console.log('\n🔌 Teste Verbindung (novamira/adrians-greet)...');
     try {
-      const greeting = await bridge.call('novamira-adrianv2/greet', { name: 'Pipeline-Smoke-Test' });
+      const greeting = await bridge.call('novamira/adrians-greet', { name: 'Pipeline-Smoke-Test' });
       console.log(`✅ Verbindung OK: ${JSON.stringify(greeting).slice(0, 200)}`);
     } catch (err) {
       console.log(`❌ Verbindungstest fehlgeschlagen: ${err.message}`);
@@ -827,12 +919,12 @@ if (process.argv.includes('--self-test')) {
     // 4. Cache-Test
     console.log('\n📦 Teste Cache (export-design-system — read-only)...');
     const startCached = Date.now();
-    await bridge.call('novamira-adrianv2/export-design-system', {});
+    await bridge.call('novamira/adrians-export-design-system', {});
     const cachedDuration = Date.now() - startCached;
     console.log(`   Erster Call: ${cachedDuration}ms`);
 
     const startCached2 = Date.now();
-    await bridge.call('novamira-adrianv2/export-design-system', {});
+    await bridge.call('novamira/adrians-export-design-system', {});
     const cachedDuration2 = Date.now() - startCached2;
     console.log(`   Zweiter Call: ${cachedDuration2}ms ${cachedDuration2 < 100 ? '(✅ gecacht)' : '(⚠️ nicht gecacht)'}`);
 

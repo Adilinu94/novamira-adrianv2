@@ -1364,21 +1364,87 @@ describe('A2: v4-tree Mode (ENH-9)', () => {
   });
 });
 
-// ─── Suite 25: FIX-7 — callParallel() p-limit (ENH-10) ────────────────────
+// ─── Suite 25: Sprint 14 — p-limit Tuning + MCP_CONCURRENCY_PROFILE ──────
 
-describe('FIX-7: callParallel() p-limit', () => {
-  test('FIX-7: McpBridge.defaultConcurrency is 3', async () => {
+describe('Sprint 14: p-limit Tuning + MCP_CONCURRENCY_PROFILE', () => {
+  test('SP14: McpBridge.defaultConcurrency is 5 (bumped from 3)', async () => {
     const { McpBridge } = await import(toFileUrl(join(SCRIPTS, 'lib', 'mcp-bridge.js')));
     const bridge = new McpBridge({ mcpUrl: 'http://localhost:9999' });
-    assert.equal(bridge.defaultConcurrency, 3,
-      `Default concurrency should be 3, got ${bridge.defaultConcurrency}`);
+    assert.equal(bridge.defaultConcurrency, 5,
+      `Default concurrency should be 5, got ${bridge.defaultConcurrency}`);
   });
 
-  test('FIX-7: McpBridge respects constructor concurrency option', async () => {
+  test('SP14: McpBridge respects constructor concurrency option', async () => {
     const { McpBridge } = await import(toFileUrl(join(SCRIPTS, 'lib', 'mcp-bridge.js')));
-    const bridge = new McpBridge({ mcpUrl: 'http://localhost:9999', concurrency: 5 });
-    assert.equal(bridge.defaultConcurrency, 5,
+    const bridge = new McpBridge({ mcpUrl: 'http://localhost:9999', concurrency: 7 });
+    assert.equal(bridge.defaultConcurrency, 7,
       `Constructor concurrency should override default, got ${bridge.defaultConcurrency}`);
+  });
+
+  test('SP14: _resolveConcurrency() returns 5 for "medium" profile', async () => {
+    const { McpBridge } = await import(toFileUrl(join(SCRIPTS, 'lib', 'mcp-bridge.js')));
+    const origProfile = process.env.MCP_CONCURRENCY_PROFILE;
+    const origExplicit = process.env.MCP_CONCURRENCY;
+    delete process.env.MCP_CONCURRENCY;
+    process.env.MCP_CONCURRENCY_PROFILE = 'medium';
+    const val = McpBridge._resolveConcurrency();
+    if (origProfile !== undefined) process.env.MCP_CONCURRENCY_PROFILE = origProfile;
+    else delete process.env.MCP_CONCURRENCY_PROFILE;
+    if (origExplicit !== undefined) process.env.MCP_CONCURRENCY = origExplicit;
+    assert.equal(val, 5, `_resolveConcurrency() for medium should be 5, got ${val}`);
+  });
+
+  test('SP14: _resolveConcurrency() returns 2 for "low" profile', async () => {
+    const { McpBridge } = await import(toFileUrl(join(SCRIPTS, 'lib', 'mcp-bridge.js')));
+    const origProfile = process.env.MCP_CONCURRENCY_PROFILE;
+    const origExplicit = process.env.MCP_CONCURRENCY;
+    delete process.env.MCP_CONCURRENCY;
+    process.env.MCP_CONCURRENCY_PROFILE = 'low';
+    const val = McpBridge._resolveConcurrency();
+    if (origProfile !== undefined) process.env.MCP_CONCURRENCY_PROFILE = origProfile;
+    else delete process.env.MCP_CONCURRENCY_PROFILE;
+    if (origExplicit !== undefined) process.env.MCP_CONCURRENCY = origExplicit;
+    assert.equal(val, 2, `_resolveConcurrency() for low should be 2, got ${val}`);
+  });
+
+  test('SP14: _resolveConcurrency() returns 10 for "high" profile', async () => {
+    const { McpBridge } = await import(toFileUrl(join(SCRIPTS, 'lib', 'mcp-bridge.js')));
+    const origProfile = process.env.MCP_CONCURRENCY_PROFILE;
+    const origExplicit = process.env.MCP_CONCURRENCY;
+    delete process.env.MCP_CONCURRENCY;
+    process.env.MCP_CONCURRENCY_PROFILE = 'high';
+    const val = McpBridge._resolveConcurrency();
+    if (origProfile !== undefined) process.env.MCP_CONCURRENCY_PROFILE = origProfile;
+    else delete process.env.MCP_CONCURRENCY_PROFILE;
+    if (origExplicit !== undefined) process.env.MCP_CONCURRENCY = origExplicit;
+    assert.equal(val, 10, `_resolveConcurrency() for high should be 10, got ${val}`);
+  });
+
+  test('SP14: MCP_CONCURRENCY env var takes priority over profile', async () => {
+    const { McpBridge } = await import(toFileUrl(join(SCRIPTS, 'lib', 'mcp-bridge.js')));
+    const origProfile = process.env.MCP_CONCURRENCY_PROFILE;
+    const origExplicit = process.env.MCP_CONCURRENCY;
+    process.env.MCP_CONCURRENCY = '8';
+    process.env.MCP_CONCURRENCY_PROFILE = 'low'; // low=2, but explicit=8 wins
+    const val = McpBridge._resolveConcurrency();
+    if (origProfile !== undefined) process.env.MCP_CONCURRENCY_PROFILE = origProfile;
+    else delete process.env.MCP_CONCURRENCY_PROFILE;
+    if (origExplicit !== undefined) process.env.MCP_CONCURRENCY = origExplicit;
+    else delete process.env.MCP_CONCURRENCY;
+    assert.equal(val, 8, `MCP_CONCURRENCY=8 should override profile, got ${val}`);
+  });
+
+  test('SP14: _resolveConcurrency() returns 5 for unknown profile', async () => {
+    const { McpBridge } = await import(toFileUrl(join(SCRIPTS, 'lib', 'mcp-bridge.js')));
+    const origProfile = process.env.MCP_CONCURRENCY_PROFILE;
+    const origExplicit = process.env.MCP_CONCURRENCY;
+    delete process.env.MCP_CONCURRENCY;
+    process.env.MCP_CONCURRENCY_PROFILE = 'unicorn';
+    const val = McpBridge._resolveConcurrency();
+    if (origProfile !== undefined) process.env.MCP_CONCURRENCY_PROFILE = origProfile;
+    else delete process.env.MCP_CONCURRENCY_PROFILE;
+    if (origExplicit !== undefined) process.env.MCP_CONCURRENCY = origExplicit;
+    assert.equal(val, 5, `_resolveConcurrency() for unknown profile should fallback to 5, got ${val}`);
   });
 });
 

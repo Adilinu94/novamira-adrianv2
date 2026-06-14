@@ -1,34 +1,30 @@
 # STATE — framer-v4-pipeline-v2
 
-> **Letztes Update:** 2026-06-14 — Sprint 11 Complete (v0.17.0)
+> **Letztes Update:** 2026-06-14 — Sprint 12 Complete (v0.18.0)
 
 ---
 
 ## Aktueller Status
 
 ```
-Phase:     ✅ Sprint 11 abgeschlossen — 1 Commit, PR #3 offen
-Branch:    master (sprint-11 → PR #3)
-HEAD:      a1a1e1a (Sprint 11: Archive Cleanup + CI Consolidation)
+Phase:     ✅ Sprint 12 abgeschlossen — 2 Commits, PR #4 merged
+Branch:    master
+HEAD:      (sprint-12 → PR #4 merged)
 Tests:     114 Pipeline + 18 E2E + 52 PHPUnit = 184 total ✅
-Version:   v0.17.0
+Version:   v0.18.0
 Remote:    origin https://github.com/Adilinu94/Test1206.git
-PR #1:     https://github.com/Adilinu94/Test1206/pull/1 (merged)
-PR #2:     https://github.com/Adilinu94/Test1206/pull/2 (merged)
-PR #3:     https://github.com/Adilinu94/Test1206/pull/3 (offen)
+PR #1-#4:  All merged ✅
 ```
 
 ---
 
 ## Aktiver Fokus
 
-**Sprint 11: Archive Cleanup & CI Consolidation — ABGESCHLOSSEN** ✅
+**Sprint 12: Plugin README Documentation — ABGESCHLOSSEN** ✅
 
-1. ✅ Archive Cleanup: 7 files deleted from `_archived/` + `_archived-novamira-ability-code-injector/`
-2. ✅ CI Consolidation: `phpcs` + `psalm` merged into pipeline `ci.yml` (11 jobs)
-3. ✅ CI Cleanup: `.github/workflows/novamira-adrianv2-ci.yml` deleted — all CI in one workflow
-
-**Nächster Milestone: Sprint 12 — TBD**
+1. ✅ REST Endpoint docs: `GET /novamira/v1/prop-schema` with response schema
+2. ✅ Test Infrastructure: PHPUnit 52 tests table, mock functions, CI 11 jobs
+3. ✅ Deployment: `deploy-plugin.sh` modes (incremental, --force, --dry-run)
 
 ---
 
@@ -42,6 +38,7 @@ PR #3:     https://github.com/Adilinu94/Test1206/pull/3 (offen)
 
 ## Letzte Änderungen
 
+- **2026-06-14**: Sprint 12 abgeschlossen — Plugin README docs, v0.18.0
 - **2026-06-14**: Sprint 11 abgeschlossen — Archive Cleanup, CI Consolidation (11 jobs), v0.17.0
 - **2026-06-14**: Sprint 10 abgeschlossen — CI Hardening, WCAG Merge, Deploy Script, CI Integration, v0.16.0
 - **2026-06-14**: Sprint 9 abgeschlossen — 9 Commits, PR #1, 184 Tests, v0.15.0
@@ -71,5 +68,4 @@ npm test                    # 114 Pipeline-Tests
 npm run test:e2e            # 18 E2E-Tests
 cd novamira-adrianv2 && php composer.phar vendor/bin/phpunit  # 52 PHPUnit-Tests
 bash novamira-adrianv2/scripts/deploy-plugin.sh  # Plugin deployen
-gh pr merge 3               # PR #3 mergen (nach Review)
 ```

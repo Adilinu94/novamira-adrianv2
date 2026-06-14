@@ -65,25 +65,53 @@ Liefert das kanonische V4 Property-Type Schema — konsumiert von der Framer-V4-
 ```json
 {
   "version": "1.0.0",
-  "types": [
-    "e-heading", "e-paragraph", "e-button", "e-image",
-    "e-svg", "e-divider", "e-div-block", "e-container",
-    "e-form", "e-form-field", "e-form-button", "e-component"
-  ],
-  "properties": {
-    "classes": { "type": "array", "widgets": ["*"] },
-    "heading": { "type": "string", "widgets": ["e-heading"] },
-    "text": { "type": "string", "widgets": ["e-paragraph", "e-button"] },
-    "image": { "type": "image-src", "widgets": ["e-image"] },
-    "button": { "type": "object", "widgets": ["e-button"] },
-    ...
-  }
+  "types": [...12 widgets...],
+  "properties": {...13 definitions...}
 }
 ```
 
 - **Registrierung:** `includes/helpers/bootstrap.php` → `register_rest_route('novamira/v1', '/prop-schema', ...)`
 - **Quelle:** `V4_Props::get_schema()` in `includes/helpers/class-v4-props.php`
-- **Test:** 31 Tests in `tests/V4PropsSchemaTest.php` (Struktur, Typen, Properties, Edge Cases)
+- **Test:** 31 Tests in `tests/V4PropsSchemaTest.php`
+
+### `GET /wp-json/novamira/v1/health`
+
+Health Check — liefert Status, PHP/WP-Version und Timestamp.
+
+```json
+{
+  "status": "ok",
+  "timestamp": "2026-06-14T12:00:00+00:00",
+  "php": "8.2.23",
+  "wp": "6.9"
+}
+```
+
+### `GET /wp-json/novamira/v1/status`
+
+Detaillierter Status — Plugin-Info, Schema-Übersicht, Test-Counts.
+
+```json
+{
+  "plugin": { "name": "novamira-adrianv2", "version": "1.0.0" },
+  "schema": { "version": "1.0.0", "types": 12, "props": 13 },
+  "tests": { "phpunit": 52, "pipeline": 114, "e2e": 18, "total": 184 },
+  "php": "8.2.23",
+  "time": "2026-06-14T12:00:00+00:00"
+}
+```
+
+### `GET /wp-json/novamira/v1/version`
+
+Versions-Info — Plugin, PHP, WordPress.
+
+```json
+{
+  "plugin": "1.0.0",
+  "php": "8.2.23",
+  "wp": "6.9"
+}
+```
 
 ---
 
@@ -172,6 +200,7 @@ php composer.phar vendor/bin/phpunit tests/SetupV4FoundationTest.php
 | Datei | Tests | Assertions | Gegenstand |
 |-------|-------|------------|------------|
 | `V4PropsSchemaTest.php` | 31 | 91 | REST-Endpoint `GET /novamira/v1/prop-schema` — Version, Typen, Properties, Edge Cases |
+| `RestEndpointsTest.php` | 16 | 43 | REST-Endpoints `/health`, `/status`, `/version` (Sprint 13) |
 | `V4ColorContrast22Test.php` | 16 | 49 | WCAG 2.2 — Target Size (2.5.8), Focus Appearance (2.4.11), Contrast Ratio |
 | `SetupV4FoundationTest.php` | 5 | 5 | `setup-v4-foundation` Ability — Parameter-Validierung |
 

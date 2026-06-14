@@ -30,6 +30,15 @@ fonts/
 .env
 .env.local
 .mcp.json
+mcp-server-config.json
+
+# Pipeline-Cache & Reports
+.pipeline/
+reports/
+animation-plan.json
+rollback-plan.json
+.framer-export-cache.json
+.deploy-marker
 
 # Temporaere Dateien
 *.tmp

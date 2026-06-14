@@ -72,3 +72,76 @@ add_action('rest_api_init', function () {
         'permission_callback' => '__return_true',
     ]);
 });
+
+// ─── REST-API: Health Endpoint (Sprint 13) ───────────────────────────────
+// GET /wp-json/novamira/v1/health
+function novamira_adrianv2_rest_health(): array
+{
+    return [
+        'status'    => 'ok',
+        'timestamp' => current_time('c'),
+        'php'       => PHP_VERSION,
+        'wp'        => $GLOBALS['wp_version'] ?? 'unknown',
+    ];
+}
+
+add_action('rest_api_init', function () {
+    register_rest_route('novamira/v1', '/health', [
+        'methods'             => 'GET',
+        'callback'            => 'novamira_adrianv2_rest_health',
+        'permission_callback' => '__return_true',
+    ]);
+});
+
+// ─── REST-API: Status Endpoint (Sprint 13) ────────────────────────────────
+// GET /wp-json/novamira/v1/status
+function novamira_adrianv2_rest_status(): array
+{
+    $schema = \Novamira\AdrianV2\Helpers\V4_Props::get_schema();
+    return [
+        'plugin' => [
+            'name'    => 'novamira-adrianv2',
+            'version' => NOVAMIRA_ADRIANV2_VERSION,
+        ],
+        'schema' => [
+            'version' => $schema['version'],
+            'types'   => count($schema['types']),
+            'props'   => count($schema['properties']),
+        ],
+        'tests' => [
+            'phpunit'  => 52,
+            'pipeline' => 114,
+            'e2e'      => 18,
+            'total'    => 184,
+        ],
+        'php'  => PHP_VERSION,
+        'time' => current_time('c'),
+    ];
+}
+
+add_action('rest_api_init', function () {
+    register_rest_route('novamira/v1', '/status', [
+        'methods'             => 'GET',
+        'callback'            => 'novamira_adrianv2_rest_status',
+        'permission_callback' => '__return_true',
+    ]);
+});
+
+// ─── REST-API: Version Endpoint (Sprint 13) ───────────────────────────────
+// GET /wp-json/novamira/v1/version
+function novamira_adrianv2_rest_version(): array
+{
+    return [
+        'plugin' => NOVAMIRA_ADRIANV2_VERSION,
+        'php'    => PHP_VERSION,
+        'wp'     => $GLOBALS['wp_version'] ?? 'unknown',
+    ];
+}
+
+add_action('rest_api_init', function () {
+    register_rest_route('novamira/v1', '/version', [
+        'methods'             => 'GET',
+        'callback'            => 'novamira_adrianv2_rest_version',
+        'permission_callback' => '__return_true',
+    ]);
+});

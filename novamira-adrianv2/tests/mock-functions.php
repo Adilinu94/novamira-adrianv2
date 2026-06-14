@@ -133,6 +133,9 @@ if (!function_exists('sanitize_file_name')) {
 if (!function_exists('esc_html')) {
     function esc_html($text) { return $text; }
 }
+if (!function_exists('current_time')) {
+    function current_time($type = 'mysql', $gmt = 0) { return date('c'); }
+}
 
 // ── WP_Error stub ──
 if (!class_exists('WP_Error')) {

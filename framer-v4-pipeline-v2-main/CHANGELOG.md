@@ -1,5 +1,19 @@
 # Changelog — framer-v4-pipeline-v2
 
+## [v0.18.0] — 2026-06-14
+
+### Sprint 12 — Plugin README Documentation
+
+- **Plugin README**: Comprehensive rewrite — REST endpoint `GET /novamira/v1/prop-schema`, PHPUnit test infrastructure (3 classes, 52 tests), CI 11 jobs table, deployment script usage
+- **Review fixes**: All 11 CI jobs listed, `composer.phar` consistency, relative paths in deployment docs
+- **PR #4**: sprint-12 → master
+
+### Test-Status
+- `npm test` → 114/114 ✅
+- `npm run test:e2e` → 18/18 ✅
+- PHPUnit → 52/52 ✅
+- Total: 184 tests, 100% passing
+
 ## [v0.17.0] — 2026-06-14
 
 ### Sprint 11 — Archive Cleanup & CI Consolidation
