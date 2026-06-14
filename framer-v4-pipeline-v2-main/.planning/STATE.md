@@ -1,30 +1,36 @@
 # STATE — framer-v4-pipeline-v2
 
-> **Letztes Update:** 2026-06-14 — Sprint 12 Complete (v0.18.0)
+> **Letztes Update:** 2026-06-14 — Sprints 14+15 Complete (v0.19.0)
 
 ---
 
 ## Aktueller Status
 
 ```
-Phase:     ✅ Sprint 12 abgeschlossen — 2 Commits, PR #4 merged
+Phase:     ✅ Sprints 14+15 abgeschlossen — 2 Commits, PR #5+#6 merged
 Branch:    master
-HEAD:      (sprint-12 → PR #4 merged)
-Tests:     114 Pipeline + 18 E2E + 52 PHPUnit = 184 total ✅
-Version:   v0.18.0
+HEAD:      (sprint-15 → PR #6 merged)
+Tests:     128 Pipeline + 18 E2E + 52 PHPUnit = 198 total ✅
+Version:   v0.19.0
 Remote:    origin https://github.com/Adilinu94/Test1206.git
-PR #1-#4:  All merged ✅
+PR #1-#6:  All merged ✅
 ```
 
 ---
 
 ## Aktiver Fokus
 
-**Sprint 12: Plugin README Documentation — ABGESCHLOSSEN** ✅
+**Sprint 15: Code Review Remediation — ABGESCHLOSSEN** ✅
 
-1. ✅ REST Endpoint docs: `GET /novamira/v1/prop-schema` with response schema
-2. ✅ Test Infrastructure: PHPUnit 52 tests table, mock functions, CI 11 jobs
-3. ✅ Deployment: `deploy-plugin.sh` modes (incremental, --force, --dry-run)
+1. ✅ Corrupt cache JSON resilience: try/catch in checkFramerExportCache
+2. ✅ Dead fallback fix: callParallel ?? 3 → ?? 5
+3. ✅ Caching tests: 9 tests (Suite 37), 114→128 pipeline
+
+**Sprint 14: Pipeline Performance — ABGESCHLOSSEN** ✅
+
+1. ✅ Concurrency 3→5 + MCP_CONCURRENCY_PROFILE presets (low=2/medium=5/high=10)
+2. ✅ FramerExport caching: 1h TTL, atomic writes, --no-cache flag
+3. ✅ Tests: Suite 25 expanded 2→8, all 128 passing
 
 ---
 
@@ -38,6 +44,7 @@ PR #1-#4:  All merged ✅
 
 ## Letzte Änderungen
 
+- **2026-06-14**: Sprints 14+15 abgeschlossen — Concurrency tuning, FramerExport caching, corrupt JSON resilience, 128 tests, v0.19.0
 - **2026-06-14**: Sprint 12 abgeschlossen — Plugin README docs, v0.18.0
 - **2026-06-14**: Sprint 11 abgeschlossen — Archive Cleanup, CI Consolidation (11 jobs), v0.17.0
 - **2026-06-14**: Sprint 10 abgeschlossen — CI Hardening, WCAG Merge, Deploy Script, CI Integration, v0.16.0
@@ -64,7 +71,7 @@ PR #1-#4:  All merged ✅
 ## Nächster Schritt
 
 ```
-npm test                    # 114 Pipeline-Tests
+npm test                    # 128 Pipeline-Tests
 npm run test:e2e            # 18 E2E-Tests
 cd novamira-adrianv2 && php composer.phar vendor/bin/phpunit  # 52 PHPUnit-Tests
 bash novamira-adrianv2/scripts/deploy-plugin.sh  # Plugin deployen

@@ -2,7 +2,7 @@
 
 > **Erstellt:** 2026-06-13 | **Quelle:** V4_DESIGN_IMPROVEMENTS_RESEARCH.md (v2)
 > **Start:** Sprint 1 | **Ziel:** Design-Score 25% → 90%+
-> **Status:** ✅ Alle 12 Sprints abgeschlossen (184 Tests, 30 Requirements)
+> **Status:** ✅ Alle 14 Sprints abgeschlossen (198 Tests, 30 Requirements)
 
 ---
 
@@ -117,6 +117,63 @@ Details in PLAN-1.md bis PLAN-7.md. Zusammenfassung:
 
 ---
 
+## Phase 13: Sprint 13 — REST Endpoints ✅ Complete
+
+**Geschätzte Dauer:** ~1h | **Tatsächlich:** ~1h
+**Impact:** /health, /status, /version endpoints, 16 tests
+
+| Task | Typ | Aufwand | Datei(en) |
+|------|-----|---------|-----------|
+| **REST Endpoints** | Feature | ~1h | `bootstrap.php`, `RestEndpointsTest.php` |
+
+### Akzeptanzkriterien
+- [x] `/health` endpoint (status, php, wp)
+- [x] `/status` endpoint (plugin info, schema info, test counts)
+- [x] `/version` endpoint (plugin/php/wp versions)
+- [x] 16 tests, all passing
+
+---
+
+## Phase 14: Sprint 14 — Pipeline Performance ✅ Complete
+
+**Geschätzte Dauer:** ~2h | **Tatsächlich:** ~1h
+**Impact:** Concurrency 3→5, MCP_CONCURRENCY_PROFILE presets, FramerExport caching
+
+| Task | Typ | Aufwand | Datei(en) |
+|------|-----|---------|-----------|
+| **Concurrency Tuning** | Enhancement | ~0.5h | `mcp-bridge.js` |
+| **FramerExport Caching** | Feature | ~1h | `shared.js` |
+| **Tests Suite 25** | Testing | ~0.5h | `pipeline.test.js` |
+
+### Akzeptanzkriterien
+- [x] Default concurrency 3→5 (modern machines)
+- [x] `MCP_CONCURRENCY_PROFILE` presets (low=2/medium=5/high=10)
+- [x] FramerExport caching: 1h TTL, atomic writes
+- [x] `--no-cache` / `forceRefresh` bypass
+- [x] 8 tests in Suite 25, all passing
+- [x] PR #5: sprint-14 → master
+
+---
+
+## Phase 15: Sprint 15 — Code Review Remediation ✅ Complete
+
+**Geschätzte Dauer:** ~1h | **Tatsächlich:** ~0.5h
+**Impact:** Crashing auf corrupt cache, dead fallback, 9 more tests
+
+| Task | Typ | Aufwand | Datei(en) |
+|------|-----|---------|-----------|
+| **Corrupt JSON Resilience** | Fix | ~0.25h | `shared.js` |
+| **Dead Fallback Fix** | Fix | ~0.1h | `mcp-bridge.js` |
+| **Caching Unit Tests** | Testing | ~0.65h | `pipeline.test.js` |
+
+### Akzeptanzkriterien
+- [x] `checkFramerExportCache` returns `{cached:false}` on corrupt JSON (no crash)
+- [x] `callParallel` fallback `?? 3 → ?? 5`
+- [x] 9 tests in Suite 37 (cache hit/miss, forceRefresh, missing dir, corrupt JSON, write no-op, atomic roundtrip, .tmp cleanup, fallback source check)
+- [x] PR #6: sprint-15 → master
+
+---
+
 ## Phase 12: Sprint 12 — Plugin README ✅ Complete
 
 **Geschätzte Dauer:** ~1h | **Tatsächlich:** ~0.5h
@@ -138,15 +195,15 @@ Details in PLAN-1.md bis PLAN-7.md. Zusammenfassung:
 
 ## Qualitätssprung (Metriken)
 
-| Metrik | Vorher | Sprint 1–7 | Sprint 8 | Sprint 9 | Sprint 10 | Sprint 11 | Sprint 12 |
-|--------|--------|------------|----------|----------|-----------|-----------|-----------|
-| DOM-Tiefe | 8 | ≤3 | ≤3 | ≤3 | ≤3 | ≤3 | ≤3 |
-| Global Class % | 0% | ≥90% | ≥90% | ≥90% | ≥90% | ≥90% | ≥90% |
-| GV-Substitution % | 0% | ≥95% | ≥95% | ≥95% | ≥95% | ≥95% | ≥95% |
-| Grid-Nutzung | 0 | ≥35% | ≥35% | ≥35% | ≥35% | ≥35% | ≥35% |
-| Components | 0 | ≥10 | ≥10 | ≥10 | ≥10 | ≥10 | ≥10 |
-| Interaktionen | 0 | V4-native | V4-native | V4-native | V4-native | V4-native | V4-native |
-| **Pipeline Tests** | 49 | 100 | 105 | 114 | 114 | 114 | **114** |
-| **E2E Tests** | 0 | 12 | 15 | 18 | 18 | 18 | **18** |
-| **PHPUnit Tests** | 2 | 21 | 21 | 52 | 52 | 52 | **52** |
-| **Total** | 51 | 133 | 141 | 184 | 184 | 184 | **184** |
+| Metrik | Vorher | Sprint 1–7 | Sprint 8 | Sprint 9 | Sprint 10 | Sprint 11 | Sprint 12 | Sprint 14 | Sprint 15 |
+|--------|--------|------------|----------|----------|-----------|-----------|-----------|-----------|-----------|
+| DOM-Tiefe | 8 | ≤3 | ≤3 | ≤3 | ≤3 | ≤3 | ≤3 | ≤3 | ≤3 |
+| Global Class % | 0% | ≥90% | ≥90% | ≥90% | ≥90% | ≥90% | ≥90% | ≥90% | ≥90% |
+| GV-Substitution % | 0% | ≥95% | ≥95% | ≥95% | ≥95% | ≥95% | ≥95% | ≥95% | ≥95% |
+| Grid-Nutzung | 0 | ≥35% | ≥35% | ≥35% | ≥35% | ≥35% | ≥35% | ≥35% | ≥35% |
+| Components | 0 | ≥10 | ≥10 | ≥10 | ≥10 | ≥10 | ≥10 | ≥10 | ≥10 |
+| Interaktionen | 0 | V4-native | V4-native | V4-native | V4-native | V4-native | V4-native | V4-native | V4-native |
+| **Pipeline Tests** | 49 | 100 | 105 | 114 | 114 | 114 | 114 | 114 | **128** |
+| **E2E Tests** | 0 | 12 | 15 | 18 | 18 | 18 | 18 | 18 | **18** |
+| **PHPUnit Tests** | 2 | 21 | 21 | 52 | 52 | 52 | 52 | 52 | **52** |
+| **Total** | 51 | 133 | 141 | 184 | 184 | 184 | 184 | 184 | **198** |

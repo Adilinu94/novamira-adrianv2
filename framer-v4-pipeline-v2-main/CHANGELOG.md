@@ -1,5 +1,19 @@
 # Changelog — framer-v4-pipeline-v2
 
+## [v0.19.0] — 2026-06-14
+
+### Sprint 14+15 — Pipeline Performance + Caching + Code Review Remediation
+
+- **Sprint 14**: Concurrency 3→5, `MCP_CONCURRENCY_PROFILE` presets (low=2/medium=5/high=10), `_resolveConcurrency()`, FramerExport caching (1h TTL, atomic writes), PR #5
+- **Sprint 15**: Corrupt cache JSON resilience (try/catch), dead fallback `?? 3 → ?? 5` in callParallel, 9 caching unit tests, PR #6
+- **Tests**: Pipeline 114→128 (Suites 36→37), E2E 18, PHPUnit 52 = 198 total
+
+### Test-Status
+- `npm test` → 128/128 ✅
+- `npm run test:e2e` → 18/18 ✅
+- PHPUnit → 52/52 ✅
+- Total: 198 tests, 100% passing
+
 ## [v0.18.0] — 2026-06-14
 
 ### Sprint 12 — Plugin README Documentation

@@ -1,6 +1,6 @@
 # 🚀 Framer → Elementor V4 Pipeline V2: Master Blueprint
 
-> **Version:** v0.18.0 | **Stand:** 2026-06-14
+> **Version:** v0.19.0 | **Stand:** 2026-06-14
 
 ## 🎯 Overview
 Ziel: Umsetzung eines stabilen, token-effizienten Framer-zu-V4-Workflows basierend auf einer **3-Wege-Symbiose**:
@@ -27,7 +27,7 @@ framer-v4-pipeline-v2/
 ├── schemas/
 │   └── v4-prop-type-schema.json          # Widget-Pflichtfelder fuer Validator
 ├── tests/
-│   └── pipeline.test.js                  # 114 Regressionstests in 36 Suiten, node --test
+│   └── pipeline.test.js                  # 128 Regressionstests in 37 Suiten, node --test
 ├── tests/
 │   └── e2e.test.js                       # 18 E2E-Tests (inkl. 3 S14 ENH-16)
 └── scripts/
@@ -151,7 +151,7 @@ framer-v4-pipeline-v2/
 - [x] **FIX-7**: `mcp-bridge.js` callParallel() p-limit (concurrency=3, Worker-Pool, MCP_CONCURRENCY env var)
 - [x] **ENH-11**: `convert-xml-to-v4.js` JSDoc für 9 Kernfunktionen
 - [x] **wizard.js batch**: `--pages` + `--post-ids` Multi-Page Subcommand (S6)
-- [x] `tests/pipeline.test.js`: **114 Tests in 36 Suiten** (node --test), alle gruen
+- [x] `tests/pipeline.test.js`: **128 Tests in 37 Suiten** (node --test), alle gruen
 - [x] `tests/e2e.test.js`: **15 Tests**, alle gruen (+3 S13 ENH-12)
 - [x] `tests/integration.test.js`: **7 Tests** (4 pass, 3 skip ohne --live)
 - [x] **Sprint 9**: ENH-14 Profile-Pipeline, ENH-15 axe-core A11y (--a11y/--a11y-output), FIX-15 WCAG 2.2 PHPUnit, FIX-16/17 Media-Security
@@ -159,6 +159,8 @@ framer-v4-pipeline-v2/
 - [x] **Sprint 10**: CI PHPUnit Hardening, WCAG Contrast Merge, Deploy-Script, CI PHPUnit Integration (8. Job)
 - [x] **Sprint 11**: Archive Cleanup (7 files), CI Consolidation (11 jobs in 1 workflow)
 - [x] **Sprint 12**: Plugin README (REST endpoints, test infra, deploy docs)
+- [x] **Sprint 14**: Concurrency 3→5, MCP_CONCURRENCY_PROFILE presets, FramerExport caching
+- [x] **Sprint 15**: Corrupt cache JSON resilience, dead fallback fix, caching tests (114→128)
 - [x] GSD-Projekt: `.planning/` mit PROJECT.md, REQUIREMENTS.md, ROADMAP.md, PLAN-1-7.md, STATE.md, config.json
 - [x] `--help` Blocks: A1, A2, A3 mit einheitlichem CLI-Pattern (parseArgs help Option)
 
@@ -245,9 +247,9 @@ framer-v4-pipeline-v2/
 ## ✅ Lokale Verifikation
 
 ```bash
-npm test                # 114 pipeline tests (36 Suiten)
+npm test                # 128 pipeline tests (37 Suiten)
 npm run test:e2e        # 18 e2e tests (inkl. 3 S14 ENH-16)
-npm run test:all        # 139 tests total (114 pipeline + 18 e2e + 7 integration)
+npm run test:all        # 153 tests total (128 pipeline + 18 e2e + 7 integration)
 cd novamira-adrianv2 && php composer.phar vendor/bin/phpunit  # 52 PHPUnit tests
 bash novamira-adrianv2/scripts/deploy-plugin.sh   # Deploy plugin to solar.local
 npm run test:integration # 7 integration tests (4 pass, 3 skip ohne --live)
