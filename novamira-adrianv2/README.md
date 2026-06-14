@@ -17,24 +17,73 @@ Novamira AdrianV2 ist das **Fähigkeiten-Plugin** für den Novamira MCP Server a
 ```
 novamira-adrianv2/
 ├── novamira-adrianv2.php              # Main Plugin File
-├── includes/
-│   ├── bootstrap.php                  # Ability-Registrierung (11 Sub-Module)
-│   ├── categories.php                 # Ability-Kategorien
-│   ├── class-build-versioning.php     # Build-Versionierung (CPT elementor_build)
-│   ├── helpers/                       # 14 Hilfsklassen
-│   └── abilities/
-│       ├── a11y/          (2)         # Accessibility-Prüfung
-│       ├── atomic/        (3)         # V4 Atomic Widgets
-│       ├── audit/         (7)         # QA & Audit-Tools
-│       ├── custom-code/   (2)         # Code-Snippet-Injection
-│       ├── elementor/     (29)        # Elementor-Kernfunktionen
-│       ├── global-classes/(2)         # Global Classes
-│       ├── media/         (8)         # Media Library
-│       ├── php-sandbox/   (2)         # PHP-Sandbox (Code-Ausführung)
-│       ├── seo/           (2)         # SEO-Meta
-│       ├── utilities/     (2)         # Utilities & Diagnostics
-│       └── variables/     (2)         # Global Variables
+├── README.md                           # Diese Datei
+├── CHANGELOG.md                        # Release-Historie
+├── composer.json                       # PHP Dependencies
+├── phpunit.xml.dist                    # PHPUnit Konfiguration
+├── phpcs.xml                           # PHP CodeSniffer Konfiguration
+├── scripts/
+│   └── deploy-plugin.sh               # Deployment-Script → solar.local
+├── tests/
+│   ├── bootstrap.php                   # PHPUnit Bootstrap
+│   ├── mock-functions.php              # 20+ WordPress Mock-Funktionen
+│   ├── V4PropsSchemaTest.php           # 31 Tests — REST-Endpoint Schema
+│   ├── V4ColorContrast22Test.php       # 16 Tests — WCAG 2.2
+│   └── SetupV4FoundationTest.php       # 5 Tests — V4 Foundation
+└── includes/
+    ├── bootstrap.php                  # Ability-Registrierung (11 Sub-Module)
+    ├── categories.php                 # Ability-Kategorien
+    ├── class-build-versioning.php     # Build-Versionierung (CPT elementor_build)
+    ├── helpers/                       # 14 Hilfsklassen
+    │   ├── class-v4-props.php         # V4 Prop-Type Schema
+    │   ├── class-v4-color-contrast.php # WCAG 2.2 Kontrast-Prüfung
+    │   ├── class-v4-color-contrast-22.php # @deprecated BC-Extension
+    │   └── ...
+    └── abilities/
+        ├── a11y/          (2)         # Accessibility-Prüfung
+        ├── atomic/        (3)         # V4 Atomic Widgets
+        ├── audit/         (7)         # QA & Audit-Tools
+        ├── custom-code/   (2)         # Code-Snippet-Injection
+        ├── elementor/     (29)        # Elementor-Kernfunktionen
+        ├── global-classes/(2)         # Global Classes
+        ├── media/         (8)         # Media Library
+        ├── php-sandbox/   (2)         # PHP-Sandbox (Code-Ausführung)
+        ├── seo/           (2)         # SEO-Meta
+        ├── utilities/     (2)         # Utilities & Diagnostics
+        └── variables/     (2)         # Global Variables
 ```
+
+---
+
+## REST Endpoints
+
+### `GET /wp-json/novamira/v1/prop-schema`
+
+Liefert das kanonische V4 Property-Type Schema — konsumiert von der Framer-V4-Pipeline (`sync-schema.js`) zur Validierung von Widget-Trees.
+
+**Response:**
+```json
+{
+  "version": "1.0.0",
+  "types": [
+    "e-heading", "e-paragraph", "e-button", "e-image",
+    "e-svg", "e-divider", "e-div-block", "e-container",
+    "e-form", "e-form-field", "e-form-button", "e-component"
+  ],
+  "properties": {
+    "classes": { "type": "array", "widgets": ["*"] },
+    "heading": { "type": "string", "widgets": ["e-heading"] },
+    "text": { "type": "string", "widgets": ["e-paragraph", "e-button"] },
+    "image": { "type": "image-src", "widgets": ["e-image"] },
+    "button": { "type": "object", "widgets": ["e-button"] },
+    ...
+  }
+}
+```
+
+- **Registrierung:** `includes/helpers/bootstrap.php` → `register_rest_route('novamira/v1', '/prop-schema', ...)`
+- **Quelle:** `V4_Props::get_schema()` in `includes/helpers/class-v4-props.php`
+- **Test:** 31 Tests in `tests/V4PropsSchemaTest.php` (Struktur, Typen, Properties, Edge Cases)
 
 ---
 
@@ -94,7 +143,75 @@ composer install
 
 # 3. PHP CodeSniffer
 ./vendor/bin/phpcs --standard=phpcs.xml
+
+# 4. Deployment nach solar.local
+bash scripts/deploy-plugin.sh          # Incremental (nur geänderte Dateien)
+bash scripts/deploy-plugin.sh --force   # Alle Dateien kopieren
+bash scripts/deploy-plugin.sh --dry-run # Vorschau
 ```
+
+---
+
+## Test-Infrastruktur
+
+### PHPUnit (52 Tests, 145 Assertions)
+
+```bash
+# Alle Tests
+php composer.phar vendor/bin/phpunit
+php composer.phar vendor/bin/phpunit --testdox   # Mit Test-Namen
+
+# Einzelne Testklassen
+php composer.phar vendor/bin/phpunit tests/V4PropsSchemaTest.php
+php composer.phar vendor/bin/phpunit tests/V4ColorContrast22Test.php
+php composer.phar vendor/bin/phpunit tests/SetupV4FoundationTest.php
+```
+
+**Test-Suiten:**
+
+| Datei | Tests | Assertions | Gegenstand |
+|-------|-------|------------|------------|
+| `V4PropsSchemaTest.php` | 31 | 91 | REST-Endpoint `GET /novamira/v1/prop-schema` — Version, Typen, Properties, Edge Cases |
+| `V4ColorContrast22Test.php` | 16 | 49 | WCAG 2.2 — Target Size (2.5.8), Focus Appearance (2.4.11), Contrast Ratio |
+| `SetupV4FoundationTest.php` | 5 | 5 | `setup-v4-foundation` Ability — Parameter-Validierung |
+
+**Mock-Infrastruktur:** `tests/mock-functions.php` stellt 20+ WordPress-Funktionen bereit (`add_action`, `add_filter`, `get_option`, `wp_insert_post`, `register_rest_route`, etc.) — keine echte WordPress-Installation nötig.
+
+**Konfiguration:** `phpunit.xml.dist` mit PHPUnit 10.5+, Bootstrap `tests/bootstrap.php`, Test-Suite `Novamira AdrianV2`.
+
+### Pipeline CI (11 Jobs)
+
+Alle Tests laufen in GitHub Actions (`framer-v4-pipeline-v2-main/.github/workflows/ci.yml`):
+
+| Job | Typ | Befehl |
+|-----|-----|--------|
+| `test` | Node | `node --test tests/pipeline.test.js` (114 Tests) |
+| `test-e2e` | Node | `node --check tests/e2e.test.js` (18 Tests) |
+| `phpunit` | PHP | `./vendor/bin/phpunit --testdox` (52 Tests) |
+| `phpcs` | PHP | `./vendor/bin/phpcs --standard=phpcs.xml` |
+| `psalm` | PHP | `./vendor/bin/psalm --no-progress` |
+| `test-all` | Gate | Alle Jobs müssen passen (main/master) |
+
+**Gesamt:** 184 Tests (114 Pipeline + 18 E2E + 52 PHPUnit), 100% passing.
+
+---
+
+## Deployment
+
+```bash
+# Vom Projekt-Root aus:
+bash novamira-adrianv2/scripts/deploy-plugin.sh
+
+# Oder per npm-Script:
+npm run deploy-plugin    # (aus framer-v4-pipeline-v2-main/)
+```
+
+Das Script kopiert geänderte Plugin-Dateien von `Umbau/novamira-adrianv2/` nach `Local Sites/solar/app/public/wp-content/plugins/novamira-adrianv2/`. Es trackt den letzten Deployment-Zeitpunkt via `.deploy-marker`.
+
+**Modi:**
+- **Incremental** (default): Nur Dateien neuer als `.deploy-marker` kopieren
+- **`--force`**: Alle 77 Plugin-Dateien kopieren
+- **`--dry-run`**: Vorschau ohne Änderungen
 
 ---
 
@@ -110,8 +227,9 @@ composer lint:fix
 # Statische Analyse
 composer analyze
 
-# Tests (in Arbeit)
-composer test
+# Tests
+php composer.phar vendor/bin/phpunit
+php composer.phar vendor/bin/phpunit --testdox
 ```
 
 ### Coding Standards
@@ -119,6 +237,7 @@ composer test
 - PHP 8.0+, WordPress Coding Standards
 - Namespace: `Novamira\AdrianV2\{Helpers,Abilities\{...}}`
 - Bootstrap-Pattern: `class_exists` Guard + `require_once` + `Adrians_Registry::register()`
+- Tests: `#[CoversClass]` Attribute, PHPUnit 10.5+
 
 ---
 
@@ -126,6 +245,7 @@ composer test
 
 - **[Novamira](https://novamira.dev)** — MCP Server Basis-Plugin
 - **[Elementor](https://elementor.com)** 4.x — Page Builder
+- **[PHPUnit](https://phpunit.de)** 10.x (Dev) — Testing
 - **[Psalm](https://psalm.dev)** (Dev) — Statische Analyse
 - **[PHP_CodeSniffer](https://github.com/squizlabs/PHP_CodeSniffer)** (Dev) — Coding Standards
 
