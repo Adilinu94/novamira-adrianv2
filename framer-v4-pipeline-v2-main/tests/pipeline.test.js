@@ -1923,3 +1923,119 @@ describe('S36: ENH-15 — axe-core A11y', () => {
     assert.ok(a11yReport.aggregate, 'Standalone report must have aggregate');
   });
 });
+
+// ─── Suite 37: Sprint 15 — FramerExport Cache Tests ─────────────────────
+
+describe('S37: Sprint 15 — FramerExport Cache Tests', () => {
+  test('SP15: cache hit when URL matches and exportDir is fresh', async () => {
+    const { checkFramerExportCache, writeFramerExportCache } =
+      await import(toFileUrl(join(SCRIPTS, 'wizard', 'shared.js')));
+    const testDir = join(tmpdir(), 'pipeline-test', 's37-fresh-' + Date.now());
+    mkdirSync(testDir, { recursive: true });
+    writeFileSync(join(testDir, 'index.html'), '<html></html>', 'utf8');
+    await writeFramerExportCache('https://test.example.com/', testDir);
+    const result = await checkFramerExportCache('https://test.example.com/');
+    assert.strictEqual(result.cached, true, 'Should be cached hit');
+    assert.strictEqual(result.exportDir, testDir, 'exportDir should match');
+  });
+
+  test('SP15: cache miss when URL differs', async () => {
+    const { checkFramerExportCache, writeFramerExportCache } =
+      await import(toFileUrl(join(SCRIPTS, 'wizard', 'shared.js')));
+    const testDir = join(tmpdir(), 'pipeline-test', 's37-diff-' + Date.now());
+    mkdirSync(testDir, { recursive: true });
+    writeFileSync(join(testDir, 'index.html'), '<html></html>', 'utf8');
+    await writeFramerExportCache('https://url-a.example.com/', testDir);
+    const result = await checkFramerExportCache('https://url-b.example.com/');
+    assert.strictEqual(result.cached, false, 'Different URL should be cache miss');
+  });
+
+  test('SP15: cache miss when forceRefresh=true', async () => {
+    const { checkFramerExportCache, writeFramerExportCache } =
+      await import(toFileUrl(join(SCRIPTS, 'wizard', 'shared.js')));
+    const testDir = join(tmpdir(), 'pipeline-test', 's37-force-' + Date.now());
+    mkdirSync(testDir, { recursive: true });
+    writeFileSync(join(testDir, 'index.html'), '<html></html>', 'utf8');
+    await writeFramerExportCache('https://force.example.com/', testDir);
+    const result = await checkFramerExportCache('https://force.example.com/', true);
+    assert.strictEqual(result.cached, false, 'forceRefresh should bypass cache');
+  });
+
+  test('SP15: cache miss when exportDir no longer exists', async () => {
+    const { checkFramerExportCache, writeFramerExportCache, writeJsonAtomic } =
+      await import(toFileUrl(join(SCRIPTS, 'wizard', 'shared.js')));
+    const testDir = join(tmpdir(), 'pipeline-test', 's37-gone-' + Date.now());
+    // Write cache pointing to a dir that doesn't exist
+    const { pipelineDir } = await import(toFileUrl(join(SCRIPTS, 'wizard', 'shared.js')));
+    const CACHE_FILE = join(pipelineDir, '.framer-export-cache.json');
+    await writeJsonAtomic(CACHE_FILE, {
+      url: 'https://gone.example.com/',
+      exportDir: testDir,
+      timestamp: new Date().toISOString(),
+    });
+    const result = await checkFramerExportCache('https://gone.example.com/');
+    assert.strictEqual(result.cached, false, 'Missing exportDir should be cache miss');
+  });
+
+  test('SP15: corrupt cache JSON returns cached=false (not crash)', async () => {
+    const { checkFramerExportCache, writeJsonAtomic } =
+      await import(toFileUrl(join(SCRIPTS, 'wizard', 'shared.js')));
+    const { pipelineDir } = await import(toFileUrl(join(SCRIPTS, 'wizard', 'shared.js')));
+    const CACHE_FILE = join(pipelineDir, '.framer-export-cache.json');
+    // Write corrupt (non-JSON) content
+    writeFileSync(CACHE_FILE, 'NOT VALID JSON {{{', 'utf8');
+    const result = await checkFramerExportCache('https://corrupt.example.com/');
+    assert.strictEqual(result.cached, false, 'Corrupt JSON should return cached=false, not throw');
+  });
+
+  test('SP15: writeFramerExportCache no-ops when exportDir does not exist', async () => {
+    const { writeFramerExportCache } =
+      await import(toFileUrl(join(SCRIPTS, 'wizard', 'shared.js')));
+    const { pipelineDir } = await import(toFileUrl(join(SCRIPTS, 'wizard', 'shared.js')));
+    const CACHE_FILE = join(pipelineDir, '.framer-export-cache.json');
+    // First write a known cache entry
+    const testDir = join(tmpdir(), 'pipeline-test', 's37-noop-' + Date.now());
+    mkdirSync(testDir, { recursive: true });
+    writeFileSync(join(testDir, 'index.html'), '<html></html>', 'utf8');
+    await writeFramerExportCache('https://known.example.com/', testDir);
+    // Now try to write with a non-existent dir — should no-op, preserving old cache
+    await writeFramerExportCache('https://new.example.com/', join(tmpdir(), 'nonexistent-' + Date.now()));
+    const { readJsonIfExists } = await import(toFileUrl(join(SCRIPTS, 'wizard', 'shared.js')));
+    const cache = await readJsonIfExists(CACHE_FILE);
+    assert.strictEqual(cache.url, 'https://known.example.com/', 'Old cache entry should be preserved');
+  });
+
+  test('SP15: writeJsonAtomic writes valid JSON that can be re-read', async () => {
+    const { writeJsonAtomic, readJsonIfExists } =
+      await import(toFileUrl(join(SCRIPTS, 'wizard', 'shared.js')));
+    const filePath = tmpFile('s37-atomic.json', null);
+    const data = { test: 'value', count: 42 };
+    await writeJsonAtomic(filePath, data);
+    const read = await readJsonIfExists(filePath);
+    assert.deepStrictEqual(read, data, 'Atomic write should produce valid re-readable JSON');
+  });
+
+  test('SP15: writeJsonAtomic cleans up .tmp file after rename', async () => {
+    const { writeJsonAtomic } =
+      await import(toFileUrl(join(SCRIPTS, 'wizard', 'shared.js')));
+    const filePath = tmpFile('s37-tmp.json', null);
+    const tmpPath = filePath + '.tmp';
+    await writeJsonAtomic(filePath, { ok: true });
+    assert.strictEqual(existsSync(filePath), true, 'Target file must exist');
+    assert.strictEqual(existsSync(tmpPath), false, '.tmp file must be cleaned up');
+  });
+
+  test('SP15: callParallel dead fallback updated to 5', async () => {
+    const { McpBridge } = await import(toFileUrl(join(SCRIPTS, 'lib', 'mcp-bridge.js')));
+    // Verify the source code has ?? 5, not ?? 3
+    const src = readFileSync(join(SCRIPTS, 'lib', 'mcp-bridge.js'), 'utf8');
+    assert.ok(
+      !src.includes('this.defaultConcurrency ?? 3'),
+      'Dead fallback ?? 3 should be removed from callParallel'
+    );
+    assert.ok(
+      src.includes('this.defaultConcurrency ?? 5'),
+      'Dead fallback should be ?? 5'
+    );
+  });
+});

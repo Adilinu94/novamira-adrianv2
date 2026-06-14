@@ -198,7 +198,13 @@ const CACHE_TTL_MS = 60 * 60 * 1000; // 1 Stunde
 export async function checkFramerExportCache(framerUrl, forceRefresh = false) {
   if (forceRefresh) return { cached: false };
 
-  const cache = await readJsonIfExists(CACHE_FILE);
+  // Sprint 15: try/catch for corrupt cache JSON (prevents wizard crash)
+  let cache;
+  try {
+    cache = await readJsonIfExists(CACHE_FILE);
+  } catch {
+    return { cached: false };
+  }
   if (!cache || cache.url !== framerUrl) return { cached: false };
 
   // Prüfe ob Export-Verzeichnis noch existiert

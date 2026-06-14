@@ -602,13 +602,13 @@ export class McpBridge {
    *
    * @param {Array<{ability: string, params?: object}>} calls
    * @param {object} [options]
-   * @param {number} [options.concurrency=3]  Maximale Anzahl paralleler Calls
+   * @param {number} [options.concurrency=5]  Maximale Anzahl paralleler Calls
    * @returns {Promise<Array<{status: 'fulfilled'|'rejected', value?: any, reason?: any, ability: string}>>}
    */
   async callParallel(calls, options = {}) {
     if (!Array.isArray(calls) || calls.length === 0) return [];
 
-    const concurrency = Math.max(1, options.concurrency ?? this.defaultConcurrency ?? 3);
+    const concurrency = Math.max(1, options.concurrency ?? this.defaultConcurrency ?? 5);
 
     process.stderr.write(
       `[mcp-bridge] callParallel: ${calls.length} calls gestartet (concurrency=${concurrency})\n`
