@@ -1,41 +1,37 @@
 # STATE — framer-v4-pipeline-v2
 
-> **Letztes Update:** 2026-06-14 — Sprint 9 Complete (v0.15.0)
+> **Letztes Update:** 2026-06-14 — Sprint 10 Complete (v0.16.0)
 
 ---
 
 ## Aktueller Status
 
 ```
-Phase:     ✅ Sprint 9 abgeschlossen — 9 Commits, PR #1 offen
-Branch:    master (sprint-9-fixes → PR #1)
-HEAD:      515c83e (V4PropsSchemaTest)
+Phase:     ✅ Sprint 10 abgeschlossen — 4 Commits, PR #2 offen
+Branch:    master (sprint-10 → PR #2)
+HEAD:      9584382 (CI PHPUnit Integration)
 Tests:     114 Pipeline + 18 E2E + 52 PHPUnit = 184 total ✅
-Version:   v0.15.0
+Version:   v0.16.0
 Remote:    origin https://github.com/Adilinu94/Test1206.git
-PR:        https://github.com/Adilinu94/Test1206/pull/1
+PR #1:     https://github.com/Adilinu94/Test1206/pull/1 (merged)
+PR #2:     https://github.com/Adilinu94/Test1206/pull/2 (offen)
 ```
 
 ---
 
 ## Aktiver Fokus
 
-**Sprint 9: Pipeline Hardening & Plugin Fixes — ABGESCHLOSSEN** ✅
+**Sprint 10: CI/CD, Refactoring & Tooling — ABGESCHLOSSEN** ✅
 
-1. ✅ ENH-16: FramerExport CLI Integration — `wizard.js --non-interactive`, `spawnWithRetry shell:true`
-2. ✅ Schema-Sync: REST endpoint `GET /novamira/v1/prop-schema` + `V4_Props::get_schema()`
-3. ✅ UV_HANDLE_CLOSING: undici dispatcher destroy + `process.exitCode` (Windows fix)
-4. ✅ WCAG 2.2: Threshold `0.03928→0.04045` in `V4_Color_Contrast`
-5. ✅ Contrast Ratio Test: Color correction `#949494→#959595`
-6. ✅ Extraction Exit Codes: 4 scripts exit 0 for non-critical results
-7. ✅ PHPUnit Infrastructure: Composer + php.ini + WP mock functions
-8. ✅ V4PropsSchemaTest: 31 new PHPUnit tests (52 total, 145 assertions)
-9. ✅ Docs: BLUEPRINT v0.14.0, CHANGELOG, PR-BODY
+1. ✅ CI PHPUnit Hardening: `novamira-adrianv2-ci.yml` — removed `continue-on-error`
+2. ✅ WCAG Contrast Class Merge: `V4_Color_Contrast` now includes WCAG 2.2 methods
+3. ✅ Deploy Script: `deploy-plugin.sh` — incremental deploy to solar.local (77 files)
+4. ✅ CI PHPUnit Integration: 8th job in pipeline `ci.yml`, `test-all` depends on `phpunit`
 
-**Nächster Milestone: Sprint 10 — CI/CD, Docs & Plugin Sync**
-- CI Pipeline: GitHub Actions für PHPUnit + Node Tests
-- Plugin README & Deployment-Doku
-- Restliche `_archived/`-Bereinigung
+**Nächster Milestone: Sprint 11 — TBD**
+- `_archived/` cleanup
+- Plugin README documentation
+- CI workflow consolidation (combine both workflows)
 
 ---
 
@@ -44,13 +40,13 @@ PR:        https://github.com/Adilinu94/Test1206/pull/1
 | Issue | Schwere | Status |
 |-------|---------|--------|
 | Fonts müssen manuell via Google Fonts geladen werden | 🟢 Niedrig | Google Fonts URLs im font-plan.json |
-| `class-v4-color-contrast.php` & `class-v4-color-contrast-22.php` duplizieren `relative_luminance` | 🟢 Niedrig | Refactoring-Chance (Sprint 10) |
-| Plugin-Dateien müssen bei Änderungen manuell nach solar.local deployed werden | 🟡 Mittel | Deployment-Script in Sprint 10 |
+| `_archived/` Verzeichnisse noch nicht bereinigt | 🟢 Niedrig | Sprint 11 geplant |
 
 ---
 
 ## Letzte Änderungen
 
+- **2026-06-14**: Sprint 10 abgeschlossen — CI Hardening, WCAG Merge, Deploy Script, CI Integration, v0.16.0
 - **2026-06-14**: Sprint 9 abgeschlossen — 9 Commits, PR #1, 184 Tests, v0.15.0
 - **2026-06-14**: ENH-16 abgeschlossen — FramerExport CLI (v4.3.8), Wizard --non-interactive, spawnWithRetry, S14 E2E
 - **2026-06-14**: Sprint 9 gestartet — ENH-14 Profile-Pipeline, ENH-15 A11y, FIX-15 WCAG 2.2, FIX-16/17 Media
@@ -67,8 +63,7 @@ PR:        https://github.com/Adilinu94/Test1206/pull/1
 
 ## Offene Entscheidungen
 
-- [ ] Sprint 10 Scope festlegen: CI/CD-Pipeline oder Plugin-Refactoring?
-- [ ] `class-v4-color-contrast.php` und `class-v4-color-contrast-22.php` zusammenführen?
+- [ ] Sprint 11 Scope: Archive Cleanup + Plugin Docs + CI Consolidation?
 
 ---
 
@@ -78,5 +73,6 @@ PR:        https://github.com/Adilinu94/Test1206/pull/1
 npm test                    # 114 Pipeline-Tests
 npm run test:e2e            # 18 E2E-Tests
 cd novamira-adrianv2 && php composer.phar vendor/bin/phpunit  # 52 PHPUnit-Tests
-gh pr merge 1               # PR #1 mergen (nach Review)
+bash novamira-adrianv2/scripts/deploy-plugin.sh  # Plugin deployen
+gh pr merge 2               # PR #2 mergen (nach Review)
 ```

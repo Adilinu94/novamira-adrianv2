@@ -1,5 +1,21 @@
 # Changelog — framer-v4-pipeline-v2
 
+## [v0.16.0] — 2026-06-14
+
+### Sprint 10 — CI/CD, Refactoring & Tooling
+
+- **CI PHPUnit Hardening**: `novamira-adrianv2-ci.yml` — removed `continue-on-error`, 52 tests now mandatory gate
+- **WCAG Contrast Class Merge**: WCAG 2.2 methods (`passes_target_size`, `passes_focus_appearance`) merged into `V4_Color_Contrast` (removed `final`). `V4_Color_Contrast_22` now thin BC extension — zero duplicated code.
+- **Deploy Script**: `novamira-adrianv2/scripts/deploy-plugin.sh` — copies changed plugin files to Local WP solar.local. Modes: incremental (default), `--dry-run`, `--force`, `--help`. 77 files tracked.
+- **CI PHPUnit Integration**: PHPUnit job added to pipeline `ci.yml` (8th job). `test-all` now depends on `phpunit`. `shivammathur/setup-php@v2` + Composer cache.
+- **PR #2**: sprint-10 → master
+
+### Test-Status
+- `npm test` → 114/114 ✅
+- `npm run test:e2e` → 18/18 ✅
+- PHPUnit → 52/52 ✅
+- Total: 184 tests, 100% passing
+
 ## [v0.15.0] — 2026-06-14
 
 ### Sprint 9 Complete — Pipeline Hardening & Plugin Fixes
