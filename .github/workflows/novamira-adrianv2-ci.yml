@@ -68,7 +68,6 @@ jobs:
   phpunit:
     name: PHPUnit Tests
     runs-on: ubuntu-latest
-    continue-on-error: true  # Until full mock coverage is achieved
     defaults:
       run:
         working-directory: novamira-adrianv2
@@ -92,4 +91,4 @@ jobs:
         run: composer install --no-interaction --prefer-dist
 
       - name: Run PHPUnit
-        run: ./vendor/bin/phpunit --testdox || echo "PHPUnit not fully configured yet — see README.md"
+        run: ./vendor/bin/phpunit --testdox

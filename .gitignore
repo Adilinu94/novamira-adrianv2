@@ -32,3 +32,6 @@ _gen-*.js
 # Environment
 .env
 .env.local
+
+# Plugin deployment marker
+novamira-adrianv2/.deploy-marker

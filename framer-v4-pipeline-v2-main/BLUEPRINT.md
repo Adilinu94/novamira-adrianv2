@@ -1,6 +1,6 @@
 # 🚀 Framer → Elementor V4 Pipeline V2: Master Blueprint
 
-> **Version:** v0.14.0 | **Stand:** 2026-06-14
+> **Version:** v0.16.0 | **Stand:** 2026-06-14
 
 ## 🎯 Overview
 Ziel: Umsetzung eines stabilen, token-effizienten Framer-zu-V4-Workflows basierend auf einer **3-Wege-Symbiose**:
@@ -156,6 +156,7 @@ framer-v4-pipeline-v2/
 - [x] `tests/integration.test.js`: **7 Tests** (4 pass, 3 skip ohne --live)
 - [x] **Sprint 9**: ENH-14 Profile-Pipeline, ENH-15 axe-core A11y (--a11y/--a11y-output), FIX-15 WCAG 2.2 PHPUnit, FIX-16/17 Media-Security
 - [x] **ENH-16 FramerExport CLI**: Wizard --non-interactive läuft vollständig durch. FramerExport v4.3.8, spawnWithRetry mit shell:true-Eskalation für Bash/Windows-Kompatibilität.
+- [x] **Sprint 10**: CI PHPUnit Hardening, WCAG Contrast Merge, Deploy-Script, CI PHPUnit Integration (8. Job)
 - [x] GSD-Projekt: `.planning/` mit PROJECT.md, REQUIREMENTS.md, ROADMAP.md, PLAN-1-7.md, STATE.md, config.json
 - [x] `--help` Blocks: A1, A2, A3 mit einheitlichem CLI-Pattern (parseArgs help Option)
 
@@ -245,6 +246,8 @@ framer-v4-pipeline-v2/
 npm test                # 114 pipeline tests (36 Suiten)
 npm run test:e2e        # 18 e2e tests (inkl. 3 S14 ENH-16)
 npm run test:all        # 139 tests total (114 pipeline + 18 e2e + 7 integration)
+cd novamira-adrianv2 && php composer.phar vendor/bin/phpunit  # 52 PHPUnit tests
+bash novamira-adrianv2/scripts/deploy-plugin.sh   # Deploy plugin to solar.local
 npm run test:integration # 7 integration tests (4 pass, 3 skip ohne --live)
 npm run test:bridge     # mcp-bridge.js --self-test
 npm run test:mcp-mock   # Integration tests gegen Mock-Server
@@ -264,4 +267,5 @@ npm run measure-quality  # ENH-13: Quality Metrics Measurement
 npm run test:integration-live # FIX-13: Live Integration Tests
 node --check wizard.js
 node --check scripts/lib/mcp-bridge.js
+npm run deploy-plugin  # (alias: bash novamira-adrianv2/scripts/deploy-plugin.sh)
 ```

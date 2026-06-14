@@ -5,12 +5,15 @@
 declare(strict_types=1);
 
 /**
- * V4_Color_Contrast — WCAG color-contrast math.
+ * V4_Color_Contrast — WCAG 2.0–2.2 color-contrast math.
  *
  * Pure static helpers — no WordPress or Elementor dependency — so they run in
  * unit tests without stubs and are reusable by the A11y audit/fix tools and any
- * future brand-kit contrast checks. Implements the WCAG 2.1 relative-luminance
+ * future brand-kit contrast checks. Implements WCAG 2.x relative-luminance
  * and contrast-ratio definitions.
+ *
+ * Since 1.3.0: WCAG 2.2 methods merged from V4_Color_Contrast_22.
+ * V4_Color_Contrast_22 is now a thin BC-compatible extension.
  *
  * @package Novamira_AdrianV2
  * @since   1.0.0
@@ -23,11 +26,11 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Static WCAG contrast utilities.
+ * Static WCAG 2.0–2.2 contrast utilities.
  *
  * @since 1.0.0
  */
-final class V4_Color_Contrast {
+class V4_Color_Contrast {
 
     /** WCAG AA contrast minimum for normal text. */
     const AA_NORMAL = 4.5;
@@ -40,6 +43,14 @@ final class V4_Color_Contrast {
 
     /** WCAG AAA contrast minimum for large text. */
     const AAA_LARGE = 4.5;
+
+    // ── WCAG 2.2 Constants (merged from V4_Color_Contrast_22, v1.3.0) ──
+
+    /** WCAG 2.2 — 2.5.8 Target Size (Minimum): 24×24px */
+    public const TARGET_SIZE_MIN = 24;
+
+    /** WCAG 2.2 — 2.4.11 Focus Appearance: 3:1 contrast */
+    public const FOCUS_APPEARANCE_CONTRAST = 3.0;
 
     /**
      * Parses a CSS hex color to an [r, g, b] triplet (0-255).
@@ -169,6 +180,39 @@ final class V4_Color_Contrast {
         }
 
         return $best_hex;
+    }
+
+    // ── WCAG 2.2 Methods (merged from V4_Color_Contrast_22, v1.3.0) ──
+
+    /**
+     * Prüft ob ein Click-Target die WCAG 2.2 Mindestgröße (24×24px) erfüllt.
+     *
+     * WCAG 2.2 §2.5.8 — Target Size (Minimum).
+     *
+     * @param float $width  Target width in px.
+     * @param float $height Target height in px.
+     * @return bool
+     */
+    public static function passes_target_size(float $width, float $height): bool {
+        return $width >= self::TARGET_SIZE_MIN && $height >= self::TARGET_SIZE_MIN;
+    }
+
+    /**
+     * Prüft ob ein Focus-Indicator ausreichenden Kontrast (3:1) zum
+     * Hintergrund hat.
+     *
+     * WCAG 2.2 §2.4.11 — Focus Appearance.
+     *
+     * Null contrast_ratio (invalid hex) is treated as 1.0 — always fails
+     * the 3:1 check, same as the original V4_Color_Contrast_22 behavior.
+     *
+     * @param string $focus_color Focus indicator color (hex).
+     * @param string $bg_color    Background color (hex).
+     * @return bool
+     */
+    public static function passes_focus_appearance(string $focus_color, string $bg_color): bool {
+        $ratio = self::contrast_ratio($focus_color, $bg_color);
+        return ($ratio ?? 1.0) >= self::FOCUS_APPEARANCE_CONTRAST;
     }
 
     /**
