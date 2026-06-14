@@ -2,7 +2,7 @@
 
 > **Erstellt:** 2026-06-13 | **Quelle:** V4_DESIGN_IMPROVEMENTS_RESEARCH.md (v2)
 > **Start:** Sprint 1 | **Ziel:** Design-Score 25% → 90%+
-> **Status:** ✅ Alle 10 Sprints abgeschlossen (184 Tests, 30 Requirements)
+> **Status:** ✅ Alle 11 Sprints abgeschlossen (184 Tests, 30 Requirements)
 
 ---
 
@@ -97,17 +97,37 @@ Details in PLAN-1.md bis PLAN-7.md. Zusammenfassung:
 
 ---
 
+## Phase 11: Sprint 11 — Archive Cleanup & CI Consolidation ✅ Complete
+
+**Geschätzte Dauer:** ~2h | **Tatsächlich:** ~1h
+**Impact:** 7 archived files deleted, 3 CI jobs consolidated into 1 workflow (11 jobs)
+
+| Task | Typ | Aufwand | Datei(en) |
+|------|-----|---------|-----------|
+| **Archive Cleanup** | Maintenance | ~0.5h | `_archived/`, `_archived-novamira-ability-code-injector/` |
+| **CI Consolidation** | CI/CD | ~1h | `ci.yml` (+phpcs, +psalm), `novamira-adrianv2-ci.yml` (deleted) |
+
+### Akzeptanzkriterien
+- [x] Alle _archived/ Verzeichnisse gelöscht (7 files)
+- [x] `phpcs` + `psalm` Jobs in pipeline `ci.yml` (11 jobs total)
+- [x] `.github/workflows/novamira-adrianv2-ci.yml` gelöscht
+- [x] `test-all` gate includiert `phpcs` + `psalm`
+- [x] PR #3: sprint-11 → master
+- [x] Alle 184 Tests passen
+
+---
+
 ## Qualitätssprung (Metriken)
 
-| Metrik | Vorher | Sprint 1–7 | Sprint 8 | Sprint 9 | Sprint 10 |
-|--------|--------|------------|----------|----------|-----------|
-| DOM-Tiefe | 8 | ≤3 | ≤3 | ≤3 | ≤3 |
-| Global Class % | 0% | ≥90% | ≥90% | ≥90% | ≥90% |
-| GV-Substitution % | 0% | ≥95% | ≥95% | ≥95% | ≥95% |
-| Grid-Nutzung | 0 | ≥35% | ≥35% | ≥35% | ≥35% |
-| Components | 0 | ≥10 | ≥10 | ≥10 | ≥10 |
-| Interaktionen | 0 | V4-native | V4-native | V4-native | V4-native |
-| **Pipeline Tests** | 49 | 100 | 105 | 114 | **114** |
-| **E2E Tests** | 0 | 12 | 15 | 18 | **18** |
-| **PHPUnit Tests** | 2 | 21 | 21 | 52 | **52** |
-| **Total** | 51 | 133 | 141 | 184 | **184** |
+| Metrik | Vorher | Sprint 1–7 | Sprint 8 | Sprint 9 | Sprint 10 | Sprint 11 |
+|--------|--------|------------|----------|----------|-----------|-----------|
+| DOM-Tiefe | 8 | ≤3 | ≤3 | ≤3 | ≤3 | ≤3 |
+| Global Class % | 0% | ≥90% | ≥90% | ≥90% | ≥90% | ≥90% |
+| GV-Substitution % | 0% | ≥95% | ≥95% | ≥95% | ≥95% | ≥95% |
+| Grid-Nutzung | 0 | ≥35% | ≥35% | ≥35% | ≥35% | ≥35% |
+| Components | 0 | ≥10 | ≥10 | ≥10 | ≥10 | ≥10 |
+| Interaktionen | 0 | V4-native | V4-native | V4-native | V4-native | V4-native |
+| **Pipeline Tests** | 49 | 100 | 105 | 114 | 114 | **114** |
+| **E2E Tests** | 0 | 12 | 15 | 18 | 18 | **18** |
+| **PHPUnit Tests** | 2 | 21 | 21 | 52 | 52 | **52** |
+| **Total** | 51 | 133 | 141 | 184 | 184 | **184** |

@@ -1,37 +1,34 @@
 # STATE — framer-v4-pipeline-v2
 
-> **Letztes Update:** 2026-06-14 — Sprint 10 Complete (v0.16.0)
+> **Letztes Update:** 2026-06-14 — Sprint 11 Complete (v0.17.0)
 
 ---
 
 ## Aktueller Status
 
 ```
-Phase:     ✅ Sprint 10 abgeschlossen — 4 Commits, PR #2 offen
-Branch:    master (sprint-10 → PR #2)
-HEAD:      9584382 (CI PHPUnit Integration)
+Phase:     ✅ Sprint 11 abgeschlossen — 1 Commit, PR #3 offen
+Branch:    master (sprint-11 → PR #3)
+HEAD:      a1a1e1a (Sprint 11: Archive Cleanup + CI Consolidation)
 Tests:     114 Pipeline + 18 E2E + 52 PHPUnit = 184 total ✅
-Version:   v0.16.0
+Version:   v0.17.0
 Remote:    origin https://github.com/Adilinu94/Test1206.git
 PR #1:     https://github.com/Adilinu94/Test1206/pull/1 (merged)
-PR #2:     https://github.com/Adilinu94/Test1206/pull/2 (offen)
+PR #2:     https://github.com/Adilinu94/Test1206/pull/2 (merged)
+PR #3:     https://github.com/Adilinu94/Test1206/pull/3 (offen)
 ```
 
 ---
 
 ## Aktiver Fokus
 
-**Sprint 10: CI/CD, Refactoring & Tooling — ABGESCHLOSSEN** ✅
+**Sprint 11: Archive Cleanup & CI Consolidation — ABGESCHLOSSEN** ✅
 
-1. ✅ CI PHPUnit Hardening: `novamira-adrianv2-ci.yml` — removed `continue-on-error`
-2. ✅ WCAG Contrast Class Merge: `V4_Color_Contrast` now includes WCAG 2.2 methods
-3. ✅ Deploy Script: `deploy-plugin.sh` — incremental deploy to solar.local (77 files)
-4. ✅ CI PHPUnit Integration: 8th job in pipeline `ci.yml`, `test-all` depends on `phpunit`
+1. ✅ Archive Cleanup: 7 files deleted from `_archived/` + `_archived-novamira-ability-code-injector/`
+2. ✅ CI Consolidation: `phpcs` + `psalm` merged into pipeline `ci.yml` (11 jobs)
+3. ✅ CI Cleanup: `.github/workflows/novamira-adrianv2-ci.yml` deleted — all CI in one workflow
 
-**Nächster Milestone: Sprint 11 — TBD**
-- `_archived/` cleanup
-- Plugin README documentation
-- CI workflow consolidation (combine both workflows)
+**Nächster Milestone: Sprint 12 — TBD**
 
 ---
 
@@ -40,12 +37,12 @@ PR #2:     https://github.com/Adilinu94/Test1206/pull/2 (offen)
 | Issue | Schwere | Status |
 |-------|---------|--------|
 | Fonts müssen manuell via Google Fonts geladen werden | 🟢 Niedrig | Google Fonts URLs im font-plan.json |
-| `_archived/` Verzeichnisse noch nicht bereinigt | 🟢 Niedrig | Sprint 11 geplant |
 
 ---
 
 ## Letzte Änderungen
 
+- **2026-06-14**: Sprint 11 abgeschlossen — Archive Cleanup, CI Consolidation (11 jobs), v0.17.0
 - **2026-06-14**: Sprint 10 abgeschlossen — CI Hardening, WCAG Merge, Deploy Script, CI Integration, v0.16.0
 - **2026-06-14**: Sprint 9 abgeschlossen — 9 Commits, PR #1, 184 Tests, v0.15.0
 - **2026-06-14**: ENH-16 abgeschlossen — FramerExport CLI (v4.3.8), Wizard --non-interactive, spawnWithRetry, S14 E2E
@@ -63,7 +60,7 @@ PR #2:     https://github.com/Adilinu94/Test1206/pull/2 (offen)
 
 ## Offene Entscheidungen
 
-- [ ] Sprint 11 Scope: Archive Cleanup + Plugin Docs + CI Consolidation?
+- [ ] Sprint 12 Scope: Plugin README docs + further cleanups?
 
 ---
 
@@ -74,5 +71,5 @@ npm test                    # 114 Pipeline-Tests
 npm run test:e2e            # 18 E2E-Tests
 cd novamira-adrianv2 && php composer.phar vendor/bin/phpunit  # 52 PHPUnit-Tests
 bash novamira-adrianv2/scripts/deploy-plugin.sh  # Plugin deployen
-gh pr merge 2               # PR #2 mergen (nach Review)
+gh pr merge 3               # PR #3 mergen (nach Review)
 ```

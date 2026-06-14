@@ -1,6 +1,6 @@
 # 🚀 Framer → Elementor V4 Pipeline V2: Master Blueprint
 
-> **Version:** v0.16.0 | **Stand:** 2026-06-14
+> **Version:** v0.17.0 | **Stand:** 2026-06-14
 
 ## 🎯 Overview
 Ziel: Umsetzung eines stabilen, token-effizienten Framer-zu-V4-Workflows basierend auf einer **3-Wege-Symbiose**:
@@ -157,6 +157,7 @@ framer-v4-pipeline-v2/
 - [x] **Sprint 9**: ENH-14 Profile-Pipeline, ENH-15 axe-core A11y (--a11y/--a11y-output), FIX-15 WCAG 2.2 PHPUnit, FIX-16/17 Media-Security
 - [x] **ENH-16 FramerExport CLI**: Wizard --non-interactive läuft vollständig durch. FramerExport v4.3.8, spawnWithRetry mit shell:true-Eskalation für Bash/Windows-Kompatibilität.
 - [x] **Sprint 10**: CI PHPUnit Hardening, WCAG Contrast Merge, Deploy-Script, CI PHPUnit Integration (8. Job)
+- [x] **Sprint 11**: Archive Cleanup (7 files), CI Consolidation (11 jobs in 1 workflow)
 - [x] GSD-Projekt: `.planning/` mit PROJECT.md, REQUIREMENTS.md, ROADMAP.md, PLAN-1-7.md, STATE.md, config.json
 - [x] `--help` Blocks: A1, A2, A3 mit einheitlichem CLI-Pattern (parseArgs help Option)
 
@@ -197,7 +198,7 @@ framer-v4-pipeline-v2/
 - [x] .planning/ Docs synchronisiert (REQUIREMENTS, ROADMAP, STATE, PROJECT)
 
 ### Phase 1.4+ — CI, Performance, UX, Advanced, A11y (abgeschlossen ✅)
-- [x] **1.4:** `.github/workflows/ci.yml` — 7 Jobs (test, e2e, schema, mcp-mock, visual, lint, syntax)
+- [x] **1.4:** `.github/workflows/ci.yml` — 11 Jobs (test, e2e, schema, mcp-mock, visual, lint, syntax, test-all, phpcs, psalm, phpunit)
 - [x] **1.4:** `tests/mcp-mock-server.js` — lokaler Mock (15 Ability-Responses)
 - [x] **2.1:** `class-execute-build-plan.php` — Mega-Ability (1 Call statt 18+ Agent-Turns)
 - [x] **2.2:** `scripts/parallel-pre-build.js` — Promise.allSettled für 5 Sub-Steps
