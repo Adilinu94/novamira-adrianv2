@@ -1,5 +1,20 @@
 # Changelog — framer-v4-pipeline-v2
 
+## [v0.17.0] — 2026-06-14
+
+### Sprint 11 — Archive Cleanup & CI Consolidation
+
+- **Archive Cleanup**: 7 files deleted — `_archived/` (INTEGRATION-PLAN.md, PIPELINE_AUDIT_REPORT.md) and `_archived-novamira-ability-code-injector/` (5 old ability files).
+- **CI Consolidation**: `phpcs` + `psalm` jobs merged from standalone `novamira-adrianv2-ci.yml` into pipeline `ci.yml` (11 jobs total). `test-all` now gates on all PHP jobs.
+- **CI Cleanup**: `.github/workflows/novamira-adrianv2-ci.yml` deleted — all CI in one workflow.
+- **PR #3**: sprint-11 → master
+
+### Test-Status
+- `npm test` → 114/114 ✅
+- `npm run test:e2e` → 18/18 ✅
+- PHPUnit → 52/52 ✅
+- Total: 184 tests, 100% passing
+
 ## [v0.16.0] — 2026-06-14
 
 ### Sprint 10 — CI/CD, Refactoring & Tooling
