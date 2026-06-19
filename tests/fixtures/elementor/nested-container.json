@@ -1,0 +1,54 @@
+[
+  {
+    "id": "d4e5f6a",
+    "elType": "container",
+    "settings": {
+      "css_classes": "top-level-section",
+      "_css_classes": "top-level-section"
+    },
+    "elements": [
+      {
+        "id": "e5f6a7b",
+        "elType": "container",
+        "settings": {
+          "css_classes": "productslider mid-level",
+          "_css_classes": "productslider mid-level"
+        },
+        "elements": [
+          {
+            "id": "f6a7b8c",
+            "elType": "container",
+            "settings": {
+              "css_classes": "inner-wrap",
+              "_css_classes": "inner-wrap"
+            },
+            "elements": [
+              {
+                "id": "a7b8c9d",
+                "elType": "widget",
+                "widgetType": "heading",
+                "settings": {
+                  "title": "Product Title",
+                  "css_classes": "product-item-title",
+                  "_css_classes": "product-item-title"
+                },
+                "elements": []
+              },
+              {
+                "id": "b8c9d0e",
+                "elType": "widget",
+                "widgetType": "button",
+                "settings": {
+                  "text": "Add to Cart",
+                  "css_classes": "add-to-cart-btn",
+                  "_css_classes": "add-to-cart-btn"
+                },
+                "elements": []
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

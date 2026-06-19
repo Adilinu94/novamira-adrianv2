@@ -1,0 +1,59 @@
+[
+  {
+    "id": "c9d0e1f",
+    "elType": "e-flexbox",
+    "settings": {
+      "classes": {
+        "$$type": "classes",
+        "value": [
+          "g-productslider",
+          "v4-container"
+        ]
+      },
+      "css_classes": "g-productslider v4-container",
+      "_css_classes": "g-productslider v4-container"
+    },
+    "elements": [
+      {
+        "id": "d0e1f2a",
+        "elType": "widget",
+        "widgetType": "e-heading",
+        "settings": {
+          "title": "Atomic Flow",
+          "css_classes": "g-atom-headline",
+          "_css_classes": "g-atom-headline",
+          "font_size": {
+            "$$type": "size",
+            "value": {
+              "size": 24.5,
+              "unit": "px"
+            }
+          },
+          "color": {
+            "$$type": "color",
+            "value": "#333333"
+          }
+        },
+        "elements": []
+      },
+      {
+        "id": "d1e2f3a",
+        "elType": "widget",
+        "widgetType": "e-paragraph",
+        "settings": {
+          "text": "This is a v4 atomic paragraph rendered with $$type envelopes.",
+          "css_classes": "g-atom-paragraph",
+          "_css_classes": "g-atom-paragraph",
+          "padding": {
+            "$$type": "size",
+            "value": {
+              "size": 16,
+              "unit": "px"
+            }
+          }
+        },
+        "elements": []
+      }
+    ]
+  }
+]

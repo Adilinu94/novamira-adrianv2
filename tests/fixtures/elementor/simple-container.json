@@ -1,0 +1,34 @@
+[
+  {
+    "id": "a1b2c3d",
+    "elType": "container",
+    "settings": {
+      "css_classes": "my-simple-container",
+      "_css_classes": "my-simple-container"
+    },
+    "elements": [
+      {
+        "id": "b2c3d4e",
+        "elType": "widget",
+        "widgetType": "heading",
+        "settings": {
+          "title": "Hello World",
+          "css_classes": "my-h1",
+          "_css_classes": "my-h1"
+        },
+        "elements": []
+      },
+      {
+        "id": "c3d4e5f",
+        "elType": "widget",
+        "widgetType": "button",
+        "settings": {
+          "text": "Click Me",
+          "css_classes": "my-button",
+          "_css_classes": "my-button"
+        },
+        "elements": []
+      }
+    ]
+  }
+]

@@ -1,0 +1,35 @@
+# novamira-adrianv2 — `git archive` / dist exclusions
+#
+# Files / directories listed with `export-ignore` are kept in source control
+# but stripped from end-user distributions (git archive output, Composer
+# create-project without dev deps, WP.org svn tag).
+#
+# Implicit INCLUDE (these SHIP in dist because no `export-ignore` matches them):
+#   composer.lock, README.md, phpunit.xml.dist, psalm.xml, phpcs.xml,
+#   .editorconfig, .gitignore, .gitattributes
+# Rationale: downstream forks / contributors expect them; WP.org previews
+# show README.md; lockfile enables reproducible `composer install`.
+#
+# Path convention: every entry has a leading `/` so the match anchors to
+# the archive root (= plugin root in the dist zip).
+
+# ── Claude Code skill (MIT © ProofPilot, dev-only)
+/.claude/                         export-ignore
+
+# ── Runtime caches (regenerated on demand)
+/.phpunit.cache/                  export-ignore
+/.psalm-cache/                    export-ignore
+
+# ── Tests, docs, dev scripts (not shipped to WP runtimes)
+/tests/                           export-ignore
+/docs/                            export-ignore
+/scripts/                         export-ignore
+
+# ── CI workflows + local-dev environment tools
+/.github/                         export-ignore
+/local-xdebuginfo.php             export-ignore
+/.git/                            export-ignore
+
+# ── Composer third-party (forward-compat: any future `composer install`
+#     inside the plugin folder would otherwise ship tens of MB)
+/vendor/                          export-ignore

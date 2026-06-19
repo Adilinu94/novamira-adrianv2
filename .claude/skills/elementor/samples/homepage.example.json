@@ -1,0 +1,133 @@
+[
+{
+"id": "hero01",
+"elType": "container",
+"settings": {
+"content_width": "full",
+"flex_direction": "column",
+"flex_align_items": "center",
+"flex_justify_content": "center",
+"min_height": { "unit": "vh", "size": 70 },
+"background_background": "classic",
+"background_color": "#0B1F3A",
+"padding": { "unit": "px", "top": "80", "right": "20", "bottom": "80", "left": "20", "isLinked": false }
+},
+"elements": [
+{
+"id": "heroin1",
+"elType": "container",
+"settings": {
+"content_width": "boxed",
+"flex_direction": "column",
+"flex_align_items": "center",
+"flex_gap": { "unit": "px", "size": 20 }
+},
+"elements": [
+{
+"id": "heroh1",
+"elType": "widget",
+"widgetType": "heading",
+"settings": {
+"title": "Your headline goes here",
+"header_size": "h1",
+"align": "center",
+"__globals__": { "title_color": "globals/colors?id=accent" }
+}
+},
+{
+"id": "herotxt",
+"elType": "widget",
+"widgetType": "text-editor",
+"settings": {
+"editor": "<p>One supporting sentence that explains the offer in plain language.</p>",
+"align": "center"
+}
+},
+{
+"id": "herobtn",
+"elType": "widget",
+"widgetType": "button",
+"settings": {
+"text": "Get a Free Quote",
+"align": "center",
+"link": { "url": "/contact/", "is_external": "", "nofollow": "" },
+"__globals__": {
+"button_text_color": "globals/colors?id=text_inverse",
+"background_color": "globals/colors?id=accent"
+}
+}
+}
+]
+}
+]
+},
+{
+"id": "feat01",
+"elType": "container",
+"settings": {
+"content_width": "boxed",
+"flex_direction": "row",
+"flex_gap": { "unit": "px", "size": 30 },
+"padding": { "unit": "px", "top": "60", "right": "20", "bottom": "60", "left": "20", "isLinked": false }
+},
+"elements": [
+{
+"id": "featcol1",
+"elType": "container",
+"settings": { "content_width": "full", "width": { "unit": "%", "size": 33 } },
+"elements": [
+{
+"id": "featib1",
+"elType": "widget",
+"widgetType": "icon-box",
+"settings": {
+"selected_icon": { "value": "fas fa-bolt", "library": "fa-solid" },
+"title_text": "Feature one",
+"description_text": "A short benefit-led description of this feature.",
+"title_size": "h3",
+"__globals__": { "primary_color": "globals/colors?id=primary" }
+}
+}
+]
+},
+{
+"id": "featcol2",
+"elType": "container",
+"settings": { "content_width": "full", "width": { "unit": "%", "size": 33 } },
+"elements": [
+{
+"id": "featib2",
+"elType": "widget",
+"widgetType": "icon-box",
+"settings": {
+"selected_icon": { "value": "fas fa-shield-halved", "library": "fa-solid" },
+"title_text": "Feature two",
+"description_text": "A short benefit-led description of this feature.",
+"title_size": "h3",
+"__globals__": { "primary_color": "globals/colors?id=primary" }
+}
+}
+]
+},
+{
+"id": "featcol3",
+"elType": "container",
+"settings": { "content_width": "full", "width": { "unit": "%", "size": 33 } },
+"elements": [
+{
+"id": "featib3",
+"elType": "widget",
+"widgetType": "icon-box",
+"settings": {
+"selected_icon": { "value": "fas fa-clock", "library": "fa-solid" },
+"title_text": "Feature three",
+"description_text": "A short benefit-led description of this feature.",
+"title_size": "h3",
+"__globals__": { "primary_color": "globals/colors?id=primary" }
+}
+}
+]
+}
+]
+}
+]
