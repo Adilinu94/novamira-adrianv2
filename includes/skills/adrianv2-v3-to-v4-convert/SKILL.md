@@ -1,6 +1,6 @@
 ---
 title: adrianv2-v3-to-v4-convert
-description: Strategy for kit-convert-v3-to-v4 migration including pre/post audits. One-way trip — irreversible.
+description: Strategy for V3 kit migration and V3 page rebuilds into V4 Atomic, including pre/post audits. One-way trip — irreversible.
 ---
 
 # AdrianV2 Skill: V3 → V4 Conversion
@@ -8,7 +8,7 @@ description: Strategy for kit-convert-v3-to-v4 migration including pre/post audi
 > **Plugin:** novamira-adrianv2 (Adrian V2 — V2 wegen "zweites Adrian-Plugin", NICHT Elementor V2)
 > **Elementor-Welt:** mixed
 > **Required Capabilities:** manage_options
-> **Required Abilities:** `novamira-adrianv2/detect-elementor-version`, `novamira-adrianv2/kit-convert-v3-to-v4`, `novamira-adrianv2/layout-audit`, `novamira-adrianv2/class-audit`, `novamira-adrianv2/design-audit`, `novamira/elementor-get-content`
+> **Required Abilities:** `novamira-adrianv2/detect-elementor-version`, `novamira-adrianv2/kit-convert-v3-to-v4`, `novamira-adrianv2/batch-build-page`, `novamira-adrianv2/layout-audit`, `novamira-adrianv2/class-audit`, `novamira-adrianv2/design-audit`, `novamira/elementor-get-content`
 
 ## Wann aktivieren
 
@@ -35,14 +35,32 @@ description: Strategy for kit-convert-v3-to-v4 migration including pre/post audi
 ```json
 {
   "ability": "novamira-adrianv2/kit-convert-v3-to-v4",
-  "parameters": { "post_id": 1234 }
+  "parameters": { "dry_run": true, "strategy": "skip" }
 }
 ```
-→ Konvertiert: `section` → `e-flexbox`, `column` → `e-div-block` (verschachtelt), `container` → `e-flexbox`.
-→ Widgets: `heading` → `e-heading`, `text-editor` → `e-paragraph`, `button` → `e-button`, `image` → `e-image`.
-→ Styles werden von `settings` nach `styles` migriert und in `$$type`-Format gewrappt.
+→ Konvertiert NUR das Elementor Global Kit: V3-Farben und V3-Typografie-Presets werden zu V4 Variables und Global Classes.
+→ Diese Ability konvertiert KEINE Seitenstruktur, KEINE Sections, KEINE Columns und KEINE Widgets.
+→ Das Ergebnis (`variable_map`, `class_map`) ist die Design-System-Basis für die anschließende Seiten-Konvertierung.
 
-### Schritt 3: Post-Conversion Audit
+### Schritt 3: Seitenbaum nach V4 Atomic umbauen
+```json
+{
+  "ability": "novamira/elementor-get-content",
+  "parameters": { "post_id": 1234, "full_dump": true }
+}
+```
+→ V3-Struktur analysieren und Abschnitt für Abschnitt in einen V4 Atomic Tree umbauen.
+→ Mapping: `section`/`column` → `e-div-block`/`e-flexbox`, `heading` → `e-heading`, `text-editor` → `e-paragraph`, `button` → `e-button`, `image` → `e-image`.
+→ Global Classes und Variables aus Schritt 2 zuweisen. V3 Widgets nur behalten, wenn es kein sicheres Atomic-Pendant gibt.
+
+```json
+{
+  "ability": "novamira-adrianv2/batch-build-page",
+  "parameters": { "post_id": 1234, "elements": [] }
+}
+```
+
+### Schritt 4: Post-Conversion Audit
 ```json
 { "ability": "novamira-adrianv2/layout-audit", "parameters": { "post_id": 1234 } },
 { "ability": "novamira-adrianv2/class-audit", "parameters": { "post_id": 1234 } },
@@ -50,12 +68,11 @@ description: Strategy for kit-convert-v3-to-v4 migration including pre/post audi
 ```
 → Mit Pre-Conversion-Scores vergleichen. Score DARF nicht drastisch sinken.
 
-### Schritt 4: Foundation + Global Classes
+### Schritt 5: Foundation + Global Classes prüfen
 ```json
-{ "ability": "novamira-adrianv2/setup-v4-foundation", "parameters": {} },
-{ "ability": "novamira-adrianv2/batch-class", "parameters": { "post_id": 1234, "element_class_map": { ... } } }
+{ "ability": "novamira-adrianv2/setup-v4-foundation", "parameters": {} }
 ```
-→ `e-flexbox-base` und `e-div-block-base` auf Root-Container anwenden.
+→ Foundation-Klassen/Variablen müssen existieren. Klassen direkt im V4 Tree über `settings.classes` zuweisen.
 
 ## Was NICHT konvertiert wird
 
@@ -67,6 +84,6 @@ description: Strategy for kit-convert-v3-to-v4 migration including pre/post audi
 ## Gotchas
 
 - **Irreversibel**: Es gibt KEIN `kit-convert-v4-to-v3`. Backup vorher ist Pflicht.
-- **V4-Site = No-Op**: Auf bereits konvertierten Seiten liefert die Ability `WP_Error` mit Code `no_op`.
+- **Kit ≠ Page**: `kit-convert-v3-to-v4` migriert nur Design Tokens und Global Classes. Der Seitenbaum muss separat in Atomic Elements konvertiert werden.
 - **Schriftskalierung**: V3 `typography_*`-Werte werden zu V4 `styles.font-size` — prüfen ob die Einheiten (px/em/rem) korrekt übernommen wurden.
 - **Column→Div-Block Nesting**: V3 hatte `section > column > widget`; V4 hat `e-flexbox > e-div-block > widget`. Die Verschachtelung wird automatisch erzeugt, kann aber anders aussehen.

@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Novamira\AdrianV2\Abilities\Variables;
 
-use Novamira\AdrianV2\Helpers;
+use Novamira\AdrianV2\Helpers\Helpers;
 use Novamira\AdrianV2\Helpers\Guards;
 
 if (!defined('ABSPATH')) {
@@ -70,10 +70,10 @@ class Batch_Create_Variables
         // Early Helpers guard (1.1.0): prevent PHP fatal when the Helpers
         // class hasn't been loaded yet (e.g. bootstrap ordering edge case).
         // Returns a clean WP_Error so the agent can fall back gracefully.
-        if (!class_exists('Novamira\\AdrianV2\\Helpers')) {
+        if (!class_exists(Helpers::class)) {
             return new \WP_Error(
                 'helpers_not_loaded',
-                __('The Novamira\AdrianV2\Helpers class is not loaded. This is a plugin bootstrap ordering issue — try reloading the page or re-activating the plugin.', 'novamira-adrianv2')
+                __('The Novamira\AdrianV2\Helpers\Helpers class is not loaded. This is a plugin bootstrap ordering issue — try reloading the page or re-activating the plugin.', 'novamira-adrianv2')
             );
         }
 

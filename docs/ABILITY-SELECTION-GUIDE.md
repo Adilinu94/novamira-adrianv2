@@ -21,7 +21,7 @@
 | You are adding/editing ONE element on an existing page | `novamira/elementor-add-element` / `edit-element` | Cheaper than full-tree rewrite, validation is local to the affected widget |
 | You are iteratively building page-by-page (each call adds one section) | `novamira/elementor-add-element` in a loop | Avoids shipping a half-built tree that fails whole-page validation |
 | The user says "build me a page from this Framer XML" | **`novamira/elementor-set-content`** with the V4 tree | Atomic tree → atomic write path; one roundtrip |
-| **You see the error `Class "Novamira\AdrianV2\Guards" not found`** | Switch to `novamira/elementor-set-content` immediately, then report the AdrianV2 namespace bug to the user | Bug is tracked in `includes/helpers/class-helpers.php` — namespace mismatch |
+| The user wants to migrate an existing V3 Elementor page to V4 Atomic | Run `detect-elementor-version` with `post_id`, then `kit-convert-v3-to-v4`, then rebuild/convert the page tree with Atomic widgets | Kit conversion creates Variables/Classes only; page structure conversion is a separate step |
 
 **Default rule:** if in doubt, use `novamira/elementor-set-content`. It is
 official, validated, and lives in the `novamira/*` namespace which is not
@@ -109,12 +109,6 @@ file `includes/abilities/elementor/class-batch-build-page.php`.
   validator and the AdrianV2 plugin authors saw the failures firsthand.
 
 **Weaknesses:**
-- **Currently broken on first call.** Calls `Guards::invalidate_elementor_cache()`
-  after every write, but the `use` statement points to
-  `Novamira\AdrianV2\Guards` instead of `Novamira\AdrianV2\Helpers\Guards`.
-  Symptom: every call throws `Class "Novamira\AdrianV2\Guards" not found`.
-  **Until this is fixed, every page build using this ability fails after
-  the cache-invalidation line.** See "AdrianV2 Guards namespace bug" below.
 - **No server-side validation.** Unlike `novamira/elementor-set-content`,
   this ability writes the data immediately and runs four normalization
   passes afterwards. A malformed tree gets persisted; bad values only
@@ -170,37 +164,30 @@ file `includes/abilities/elementor/class-batch-build-page.php`.
 
 ---
 
-## The `class_exists` Symptom: How To Recognize The AdrianV2 Guards Bug
+## Historical Note: The AdrianV2 Guards Namespace Bug
 
-When the AdrianV2 plugin's class loader hits the broken `use` statement, PHP
-defers the resolution to runtime. The class loads (the file is required
-before the namespace mismatch matters), but the **first call to
-`Guards::invalidate_elementor_cache($post_id)`** fails with:
+Older AdrianV2 builds had a broken `use` statement for `Guards`, so PHP
+resolved cache invalidation to `Novamira\AdrianV2\Guards` instead of
+`Novamira\AdrianV2\Helpers\Guards`. The symptom was:
 
 ```
 PHP Fatal error:  Class "Novamira\AdrianV2\Guards" not found in
 .../includes/abilities/elementor/class-batch-build-page.php on line 138
 ```
 
-The page write itself succeeded — `_elementor_data` is on disk — but the
-response is a fatal error, so the caller thinks nothing was persisted and
-may retry, producing a duplicate write.
+The page write itself usually succeeded — `_elementor_data` was on disk —
+but the response was a fatal error.
 
-**If you see this error:**
+**If you still see this error on a host:**
 
 1. Verify the write actually landed: `novamira/elementor-get-content
    post_id=<id>` should return the tree.
-2. Inform the user: "The AdrianV2 plugin's `batch-build-page` ability has a
-   namespace bug. The page is built, but the ability throws on cache
-   invalidation. Workaround: I have rebuilt the page using
-   `novamira/elementor-set-content`, which works."
-3. Do NOT call `batch-build-page` again — use `set-content` for any page
-   that needs a full rewrite.
+2. Update AdrianV2 to a build where `use Novamira\AdrianV2\Helpers\Guards;`
+   is used.
+3. Use `novamira/elementor-set-content` as a temporary workaround.
 
-**Fix status (2026-06-17):** the namespace in the 27 affected ability
-files is being patched from `use Novamira\AdrianV2\Guards;` to
-`use Novamira\AdrianV2\Helpers\Guards;` — see the fix commit on
-`novamira-adrianv2` master.
+**Current master status:** `batch-build-page` imports
+`Novamira\AdrianV2\Helpers\Guards` correctly.
 
 ---
 
@@ -312,9 +299,10 @@ Before touching a page, ask the plugin what it sees:
 novamira-adrianv2/detect-elementor-version
 ```
 
-This returns `{ elementor_version, atomic_supported, ... }`. If
-`atomic_supported` is `false` you are on V3 and the V4-only abilities
-below will refuse to run.
+This returns `{ elementor_version, atomic_supported, supports_atomic, ... }`.
+Pass `post_id` to also get `{ page_version, page_is_v4, detected,
+recommended_page_action }`. If `atomic_supported` is `false` the site is not
+ready for V4-only abilities.
 
 ### V4-Only Abilities (refuse on V3 site unless `opt_in: true`)
 
@@ -325,13 +313,11 @@ below will refuse to run.
 | `novamira-adrianv2/edit-global-class-variant` | Same. |
 | `novamira-adrianv2/remove-global-class` | Same. |
 | `novamira-adrianv2/apply-variable-to-class` | V4 design tokens only. |
-| `novamira-adrianv2/kit-convert-v3-to-v4` | Returns a `no_op` WP_Error on V4 sites — V3 kit → V4 conversion is a one-way trip. |
+| `novamira-adrianv2/kit-convert-v3-to-v4` | Migrates legacy kit colors/typography into V4 Variables and Global Classes. It does not convert page structure. |
 | `novamira-adrianv2/rollback-build` | Snapshots elementor_data via WP revisions; the rollback only makes sense for atomic-tree edits. |
 
-All seven refuse with a `WP_Error(novamira_adrianv2_v4_required, ...)`
-when the site is V3. If you genuinely need to run on V3 (one-off
-migration), pass `opt_in: true`. The guard is in `Guards::v4_required()`
-(see `includes/helpers/class-helpers.php`).
+These abilities refuse when the site is not V4-capable. Check each ability
+schema before assuming an `opt_in` override exists.
 
 ### Mixed Abilities (V4-aware per page)
 
@@ -341,10 +327,9 @@ migration), pass `opt_in: true`. The guard is in `Guards::v4_required()`
 | `novamira-adrianv2/batch-class` | Same per-page check. |
 | `novamira-adrianv2/patch-element-styles` | Same per-page check. |
 
-The guard is `Guards::page_must_match($post_id, $expected_version, $ability_name)`.
 The detection uses `Elementor_Version_Resolver::detect_page_version()` —
-check that on a page with version metadata cleared to confirm the
-heuristic before relying on it in your workflow.
+check that on a page with version metadata cleared to confirm the heuristic
+before relying on it in your workflow.
 
 ### New v1.1.0 Abilities
 

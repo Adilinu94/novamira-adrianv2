@@ -33,6 +33,7 @@ use Novamira\AdrianV2\Helpers\PHP_Sandbox_Store;
 use Novamira\AdrianV2\Helpers\PHP_Sandbox_Validator;
 use Novamira\AdrianV2\Helpers\Ability_Registry;
 use Novamira\AdrianV2\Helpers\Elementor_Data_Helpers;
+use Novamira\AdrianV2\Helpers\Elementor_Version_Resolver;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -428,32 +429,77 @@ class Atomic_Layouts {
 
         wp_register_ability($name, [
             'label'               => __('Detect Elementor Version', 'novamira-adrianv2'),
-            'description'         => __('Returns the Elementor version and whether atomic elements (v4.0+) are supported. Call this first to decide whether to use legacy tools or atomic tools.', 'novamira-adrianv2'),
+            'description'         => __('Returns site-level Elementor V4/atomic capabilities and, when post_id is provided, the detected page version. Call this first to decide whether to use legacy tools, atomic tools, or V3-to-V4 conversion.', 'novamira-adrianv2'),
             'category'            => 'elementor',
-            'execute_callback'    => static function () {
-                $core_version = defined('ELEMENTOR_VERSION') ? ELEMENTOR_VERSION : 'unknown';
-                $pro_version  = defined('ELEMENTOR_PRO_VERSION') ? ELEMENTOR_PRO_VERSION : null;
+            'execute_callback'    => static function ($input = null) {
+                $input        = is_array($input) ? $input : [];
+                $post_id      = absint($input['post_id'] ?? 0);
+                $core_version = defined('ELEMENTOR_VERSION') ? (string) ELEMENTOR_VERSION : 'unknown';
+                $pro_version  = defined('ELEMENTOR_PRO_VERSION') ? (string) ELEMENTOR_PRO_VERSION : 'not-installed';
+                $caps         = Elementor_Version_Resolver::atomic_capabilities();
+                $site_is_v4   = Elementor_Version_Resolver::site_is_v4();
                 $supports     = V4_Props::is_atomic_supported();
+                $kit_id       = function_exists('get_option') ? absint(get_option('elementor_active_kit')) : 0;
 
-                return [
+                $result = [
                     'elementor_version'     => $core_version,
                     'elementor_pro_version' => $pro_version,
+                    'site_is_v4'            => $site_is_v4,
+                    'atomic_supported'      => $supports,
                     'supports_atomic'       => $supports,
+                    'global_classes_available' => (bool) ($caps['global_classes_available'] ?? false),
+                    'global_variables_available' => $site_is_v4 && $kit_id > 0,
+                    'elementor_active'      => (bool) ($caps['elementor_active'] ?? false),
                     'recommended_mode'      => $supports ? 'atomic' : 'legacy',
                 ];
+
+                if ($post_id > 0) {
+                    $page_version = Elementor_Version_Resolver::detect_page_version($post_id);
+                    $page_is_v4   = Elementor_Version_Resolver::VERSION_V4 === $page_version;
+
+                    if ('unknown' === $page_version) {
+                        $page_action = 'inspect_or_enable_elementor';
+                    } elseif ($page_is_v4) {
+                        $page_action = 'use_atomic';
+                    } elseif ($supports) {
+                        $page_action = 'convert_to_atomic';
+                    } else {
+                        $page_action = 'use_legacy';
+                    }
+
+                    $result['post_id'] = $post_id;
+                    $result['page_version'] = $page_version;
+                    $result['page_is_v4'] = $page_is_v4;
+                    $result['detected'] = $page_version;
+                    $result['recommended_page_action'] = $page_action;
+                }
+
+                return $result;
             },
             'permission_callback' => 'novamira_permission_callback',
             'input_schema'        => [
                 'type'       => 'object',
-                'properties' => new \stdClass(),
+                'properties' => [
+                    'post_id' => ['type' => 'integer', 'description' => __('Optional post/page ID for page-level V3/V4 detection.', 'novamira-adrianv2')],
+                ],
             ],
             'output_schema'       => [
                 'type'       => 'object',
                 'properties' => [
-                    'elementor_version'     => ['type' => 'string'],
-                    'elementor_pro_version' => ['type' => 'string'],
-                    'supports_atomic'       => ['type' => 'boolean'],
-                    'recommended_mode'      => ['type' => 'string'],
+                    'elementor_version'              => ['type' => 'string'],
+                    'elementor_pro_version'          => ['type' => 'string'],
+                    'site_is_v4'                     => ['type' => 'boolean'],
+                    'atomic_supported'               => ['type' => 'boolean'],
+                    'supports_atomic'                => ['type' => 'boolean'],
+                    'global_classes_available'       => ['type' => 'boolean'],
+                    'global_variables_available'     => ['type' => 'boolean'],
+                    'elementor_active'               => ['type' => 'boolean'],
+                    'recommended_mode'               => ['type' => 'string'],
+                    'post_id'                        => ['type' => 'integer'],
+                    'page_version'                   => ['type' => 'string'],
+                    'page_is_v4'                     => ['type' => 'boolean'],
+                    'detected'                       => ['type' => 'string'],
+                    'recommended_page_action'        => ['type' => 'string'],
                 ],
             ],
             'meta'                => [

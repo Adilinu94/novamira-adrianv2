@@ -29,7 +29,13 @@ description: How to correctly read mcp-adapter-discover-abilities output, filter
 ```json
 { "ability": "novamira-adrianv2/detect-elementor-version", "parameters": {} }
 ```
-→ Gibt `elementor_version`, `atomic_supported`, `global_classes_available` zurück.
+→ Gibt Site-Level-Felder wie `elementor_version`, `atomic_supported`, `supports_atomic`, `global_classes_available` und `global_variables_available` zurück.
+
+Für eine konkrete Seite:
+```json
+{ "ability": "novamira-adrianv2/detect-elementor-version", "parameters": { "post_id": 1234 } }
+```
+→ Gibt zusätzlich `page_version`, `page_is_v4`, `detected` und `recommended_page_action` zurück.
 
 ### 3. Abilities-Discovery (via MCP Adapter)
 Der MCP-Adapter listet alle registrierten Abilities. Filtern nach:
@@ -58,5 +64,5 @@ Der MCP-Adapter listet alle registrierten Abilities. Filtern nach:
 
 - **MCP-Adapter filtert NUR nach `mcp.public=true` und `mcp.type='tool'`**: Nicht nach Category, Priority, Namespace. Wenn eine Ability fehlt, ist sie NICHT registriert.
 - **Category muss existieren**: `wp_register_ability()` lehnt Abilities still ab wenn die Category nicht in `wp_get_ability_categories()` ist.
-- **`class_exists` Schreibfehler**: `use Novamira\AdrianV2\Guards` (falsch) vs `use Novamira\AdrianV2\Helpers\Guards` (richtig). Falscher Namespace → Class not found → Ability nicht registriert.
+- **Namespace prüfen bei alten Builds**: `Guards` muss als `Novamira\AdrianV2\Helpers\Guards` importiert werden. Wenn ein Host noch `Class "Novamira\AdrianV2\Guards" not found` meldet, ist das Plugin veraltet.
 - **`novamira/*` vs `novamira-adrianv2/*`**: Core-Abilities sind im `novamira`-Namespace. V2-spezifische im `novamira-adrianv2`-Namespace. Nicht verwechseln.

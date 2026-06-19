@@ -49,18 +49,20 @@ Legt `e-flexbox-base` und `e-div-block-base` Global Classes an (idempotent). Nur
 ```
 **Wichtig:** `content` ist ein ARRAY, kein String. Jedes Element hat `elType` (z.B. `e-flexbox`, `e-heading`, `e-button`), `id` (kebab-case, max 43 Zeichen), `settings` (Widget-Content), `styles` (CSS-Properties im `$$type`-Format), und `elements` (Kinder).
 
-**Alternative:** `batch-build-page` kann Seite ERSTELLEN UND schreiben in einem Call — aber nur verwenden wenn der Guards-Namespace-Bug gefixt ist (siehe ABILITY-SELECTION-GUIDE.md).
+**Alternative:** `batch-build-page` kann Seite ERSTELLEN UND schreiben in einem Call. Für komplette V4 Trees bleibt `novamira/elementor-set-content` die bevorzugte validierende Schreibschicht.
 
-### Schritt 4: Globale Klassen zuweisen (optional)
+### Schritt 4: Globale Klassen zuweisen
+Bevorzugt: Global Classes direkt im V4 Tree über `settings.classes` setzen.
+
+Optional für nachträgliche Bulk-Zuweisung:
 ```json
 {
   "ability": "novamira-adrianv2/batch-class",
   "parameters": {
     "post_id": 1234,
-    "element_class_map": {
-      "hero-section": ["e-flexbox-base", "surface-primary"],
-      "cta-button": ["e-button-base"]
-    }
+    "element_ids": ["hero-section", "hero-copy"],
+    "action": "add",
+    "class_id": "gc-1234567890abcdef"
   }
 }
 ```

@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Novamira\AdrianV2\Abilities\Elementor;
 
-use Novamira\AdrianV2\Helpers;
+use Novamira\AdrianV2\Helpers\Helpers;
 use Novamira\AdrianV2\Helpers\Guards;
 
 if (!defined('ABSPATH')) {
