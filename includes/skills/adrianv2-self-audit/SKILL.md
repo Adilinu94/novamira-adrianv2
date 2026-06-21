@@ -1,5 +1,5 @@
 ---
-title: adrianv2-self-audit
+name: adrianv2-self-audit
 description: Pre-build plugin health check: BOM check across all PHP files, strict_types probe, and ability registration count vs expected.
 ---
 

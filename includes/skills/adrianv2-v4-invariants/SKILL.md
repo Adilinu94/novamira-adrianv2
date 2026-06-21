@@ -1,5 +1,5 @@
 ---
-title: adrianv2-v4-invariants
+name: adrianv2-v4-invariants
 description: The 5 V4 atomic invariants every V4 page edit must respect. Always active on any V4 write.
 ---
 

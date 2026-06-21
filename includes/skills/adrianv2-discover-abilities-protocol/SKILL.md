@@ -1,5 +1,5 @@
 ---
-title: adrianv2-discover-abilities-protocol
+name: adrianv2-discover-abilities-protocol
 description: How to correctly read mcp-adapter-discover-abilities output, filter by capability, detect V3/V4 categories, and match abilities to tasks.
 ---
 

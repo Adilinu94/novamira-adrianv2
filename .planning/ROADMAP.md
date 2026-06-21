@@ -270,7 +270,7 @@
 
 > Unser eigenes Skill `includes/skills/adrianv2-live-edit/SKILL.md` benutzt Yoast-Format mit `Activate when …`. Der upstream Skill nutzt simpler frontmatter (`name: elementor`, `description: ...`). Das ist ein **Format-Mismatch** — Claude Code unterstützt nur die upstream-Form für Auto-Discovery.
 
-### F1. `includes/skills/adrianv2-live-edit/SKILL.md` auf Claude-Code-Format bringen  ·  **LOW · S · MED**
+### F1. `includes/skills/adrianv2-live-edit/SKILL.md` auf Claude-Code-Format bringen  ·  **LOW · S · MED**  ✅
 
 **Schritte:**
 
@@ -362,7 +362,7 @@
 | ID | Item | Größe | Prio |
 |---|---|---|---|
 | K1 | `tests/_smoke_live_edit_reflection.php` Snapshot-Test — Hash der gemockten Registry persistieren für Regression-Detection. | S | LOW |
-| K2 | `mcp-server-config.example.json` — Beispiel-Konfiguration mit Live-Server-URL. | S | LOW |
+| K2 | `mcp-server-config.example.json` — Beispiel-Konfiguration mit Live-Server-URL. | S | LOW | ✅ |
 | K3 | `docs/architecture.md` — Diagramm aller 7 WPCode-Abilities + Helpers + wo sie zusammenspielen. | M | LOW |
 | K4 | Ability-Discovery-Page im README mit Tab-View nach Kategorie. | M | LOW |
 | K5 | MCP-Server-Rate-Limit per Ability (Schutz gegen Burst) | L | MED |

@@ -1,5 +1,5 @@
 ---
-title: adrianv2-rollback-build
+name: adrianv2-rollback-build
 description: Build_Versioning::rollback() pattern — when to snapshot, how to rollback, and what rollback CANNOT undo. V4-only.
 ---
 

@@ -1,5 +1,5 @@
 ---
-title: adrianv2-token-mapping
+name: adrianv2-token-mapping
 description: How V4_Props token wrapping works — when $$type, when scalar, when var(--e-global-*). Required knowledge for any V4 settings authoring.
 ---
 

@@ -1,5 +1,5 @@
 ---
-title: adrianv2-v3-to-v4-convert
+name: adrianv2-v3-to-v4-convert
 description: Strategy for V3 kit migration and V3 page rebuilds into V4 Atomic, including pre/post audits. One-way trip — irreversible.
 ---
 

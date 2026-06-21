@@ -1,5 +1,5 @@
 ---
-title: adrianv2-v4-atomic-build
+name: adrianv2-v4-atomic-build
 description: Complete step-by-step guide for building a V4 Atomic Page with setup-v4-foundation → batch-build-page → post-build audits.
 ---
 
