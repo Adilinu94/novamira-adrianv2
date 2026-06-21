@@ -1,0 +1,40 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build clean plugin ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: novamira-adrianv2
+          path: |
+            novamira-adrianv2.php
+            includes/
+            vendor/
+            README.md
+            CHANGELOG.md
+          include-hidden-files: true
+
+      - name: Create release archive
+        run: |
+          mkdir -p build/novamira-adrianv2
+          rsync -av --exclude-from=.distignore . build/novamira-adrianv2/
+          cd build
+          zip -r "../novamira-adrianv2-${{ github.ref_name }}.zip" novamira-adrianv2/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          body_path: CHANGELOG.md
+          files: |
+            novamira-adrianv2-${{ github.ref_name }}.zip
+          generate_release_notes: false
