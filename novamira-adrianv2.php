@@ -4,8 +4,6 @@
 
 declare(strict_types=1);
 
-error_log('[V2-MAIN-FILE] loaded at ' . __FILE__ . ' | ABSPATH=' . (defined('ABSPATH') ? 'yes' : 'no') . ' | is_admin=' . (function_exists('is_admin') ? (is_admin() ? 'yes' : 'no') : 'fn-missing'));
-
 /**
  * Plugin Name:       Novamira AdrianV2
  * Plugin URI:        https://www.novamira.ai
@@ -136,7 +134,7 @@ function novamira_adrianv2_check_dependencies()
     }
 
     // Novamira Base provides the MCP adapter and the ability registry glue.
-    if (!function_exists('novamira_load_bundled_dependencies') && !function_exists('novamira_load_bundled_dependencies')) {
+    if (!function_exists('novamira_load_bundled_dependencies') && !function_exists('wp_register_ability_category')) {
         return new \WP_Error(
             'novamira_adrianv2_novamira_base_missing',
             __('Novamira AdrianV2 requires the Novamira Base plugin to be installed and active.', 'novamira-adrianv2')
@@ -213,7 +211,9 @@ function novamira_adrianv2_install_skills(): void
 
     // Log errors so admins can diagnose silent installation failures.
     if (!empty($result['errors'])) {
-        error_log('[Novamira AdrianV2] Skill installation errors: ' . implode('; ', $result['errors']));
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('[Novamira AdrianV2] Skill installation errors: ' . implode('; ', $result['errors']));
+        }
         // Don't set version — installer will retry on next page load.
         return;
     }

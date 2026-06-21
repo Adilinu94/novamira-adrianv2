@@ -6,6 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // elementor abilities - class_exists guards + require_once + register.
 $novamira_adrianv2_elementor_files = array(
+	__DIR__ . '/class-elementor-check-setup.php',
 	__DIR__ . '/class-add-global-class-variant.php',
 	__DIR__ . '/class-apply-variable-to-class.php',
 	__DIR__ . '/class-elementor-assign-class-to-containers.php',
@@ -130,4 +131,7 @@ if ( class_exists( 'Novamira\AdrianV2\Abilities\Elementor\Reorder_Element' ) && 
 }
 if ( class_exists( 'Novamira\AdrianV2\Abilities\Elementor\Setup_V4_Foundation' ) && method_exists( 'Novamira\AdrianV2\Abilities\Elementor\Setup_V4_Foundation', 'register' ) ) {
 	Novamira\AdrianV2\Abilities\Elementor\Setup_V4_Foundation::register();
+}
+if ( class_exists( 'Novamira\\AdrianV2\\Abilities\\Elementor\\Elementor_Check_Setup' ) && method_exists( 'Novamira\\AdrianV2\\Abilities\\Elementor\\Elementor_Check_Setup', 'register' ) ) {
+	Novamira\AdrianV2\Abilities\Elementor\Elementor_Check_Setup::register();
 }

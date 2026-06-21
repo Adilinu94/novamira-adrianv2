@@ -248,7 +248,7 @@
 
 > Letzter Turn hat das Pattern für WPCode aufgesetzt. Die `novamira-pro` Schwestern haben das Pattern bereits für ~14 Plugins: Elementor, AIOSEO, Yoast, Rank Math, WooCommerce, WPBakery, PoDS, Mosaic, Metabox, Kadence/KadenceBlocks, JetEngine, GeneratePress/GenerateBlocks, Etch, Code-Snippets.
 
-### E1. Elementor  ·  **MED · M · MED**
+### E1. Elementor  ·  **MED · M · MED**  ✅
 ### E2. AIOSEO  ·  **MED · M · MED**
 ### E3. Yoast  ·  **MED · M · MED**
 ### E4. Rank Math  ·  **MED · M · MED**
@@ -310,7 +310,7 @@
 
 > Aktuell ist der `.gitattributes`-Composition-Pfad unklar. WP.org plugin dist packt `composer.lock` schon auto-aus. Aber ob das Plugin via Composer verteilt werden soll, ist nicht dokumentiert.
 
-### H1. README-Sektion "Distribution" hinzufügen  ·  **LOW · S · LOW**
+### H1. README-Sektion "Distribution" hinzufügen  ·  **LOW · S · LOW**  ✅
 
 **Schritte:**
 
@@ -326,7 +326,7 @@
 
 ## I. 🟦 CI Verkabelung
 
-### I1. GitHub Actions für phpcs + psalm + phpunit (live-Probe)  ·  **MED · L · MED**
+### I1. GitHub Actions für phpcs + psalm + phpunit (live-Probe)  ·  **MED · L · MED**  ✅
 
 **Schritte:**
 

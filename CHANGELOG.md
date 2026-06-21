@@ -3,6 +3,11 @@
 ## [Unreleased]
 
 ### Added
+- **`novamira-adrianv2/elementor-check-setup`** (E1 — ROADMAP): New read-only ability in `adrianv2-elementor` category. Probes Elementor core + Pro presence, version, V3/V4 mode, active kit ID and label, global-class count, design-token count (sum of system_colors, custom_colors, system_typography, custom_typography arrays in kit settings), and current-user permissions. Returns a flat `issues[]` list for quick diagnostics. Always call before any elementor-* write ability. Registered via `includes/abilities/elementor/class-elementor-check-setup.php` + wired into `includes/abilities/elementor/bootstrap.php`.
+- **`.github/workflows/ci.yml`** (I1 — ROADMAP): GitHub Actions CI with three jobs — `lint` (PHPCS), `analyze` (Psalm), `test` (PHPUnit, matrix PHP 8.0/8.1/8.2/8.3). Both lint and analyze use `|| true` to avoid blocking PRs on pre-existing warnings; flip when legacy warnings are resolved.
+- **README.md — Distribution section** (H1 — ROADMAP): Documents Scenario 1 (git archive + WP-Admin ZIP upload + WP-CLI install) and Scenario 2 (composer require via `composer/installers`) with copy-paste commands for both.
+
+### Fixed
 - **Elementor test fixtures + live test page** (ROADMAP D1+D2):
   - `tests/fixtures/elementor/simple-container.json` — minimum viable 3.x Flexbox-shape with one container + heading + button (entry-level round-trip shape).
   - `tests/fixtures/elementor/nested-container.json` — 3 levels of nested Flexbox containers with a `productslider` token on the mid-level container, so `assign-class-to-containers` PHPUnit tests can mutate against a realistic structural DFS.

@@ -288,6 +288,27 @@ php composer.phar vendor/bin/phpunit --testdox   # Mit Test-Namen
 
 ---
 
+## Distribution
+
+Es gibt zwei Wege, das Plugin zu beziehen:
+
+**Szenario 1 — WordPress-Admin-Upload (Standardfall):**
+`git archive --format=zip HEAD --output=novamira-adrianv2.zip` erzeugt ein Dist-ZIP ohne vendor-lose Dev-Dateien (`.github/`, `tests/`, `scripts/`, `.claude/`). Das ZIP kann direkt unter *Plugins → Neu hinzufügen → ZIP hochladen* installiert werden.
+
+```bash
+git archive HEAD --format=zip --output=novamira-adrianv2.zip
+# dann in WP-Admin hochladen, oder per WP-CLI:
+wp plugin install novamira-adrianv2.zip --activate
+```
+
+**Szenario 2 — Composer (`composer/installers`):**
+```bash
+composer require adilinu94/novamira-adrianv2
+```
+`composer/installers` legt das Plugin automatisch unter `wp-content/plugins/novamira-adrianv2/` ab. Das `composer.lock` ist im Dist enthalten für reproduzierbare Builds.
+
+---
+
 ## Abhängigkeiten
 
 - **[Novamira](https://novamira.dev)** — MCP Server Basis-Plugin
