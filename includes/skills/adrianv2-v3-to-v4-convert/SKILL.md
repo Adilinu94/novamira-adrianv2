@@ -8,7 +8,7 @@ description: Strategy for V3 kit migration and V3 page rebuilds into V4 Atomic, 
 > **Plugin:** novamira-adrianv2 (Adrian V2 — V2 wegen "zweites Adrian-Plugin", NICHT Elementor V2)
 > **Elementor-Welt:** mixed
 > **Required Capabilities:** manage_options
-> **Required Abilities:** `novamira-adrianv2/detect-elementor-version`, `novamira-adrianv2/kit-convert-v3-to-v4`, `novamira-adrianv2/batch-build-page`, `novamira-adrianv2/layout-audit`, `novamira-adrianv2/class-audit`, `novamira-adrianv2/design-audit`, `novamira/elementor-get-content`
+> **Required Abilities:** `novamira-adrianv2/detect-elementor-version`, `novamira-adrianv2/kit-convert-v3-to-v4`, `novamira-adrianv2/convert-page-v3-to-v4`, `novamira-adrianv2/layout-audit`, `novamira-adrianv2/class-audit`, `novamira-adrianv2/design-audit`
 
 ## Wann aktivieren
 
@@ -43,22 +43,25 @@ description: Strategy for V3 kit migration and V3 page rebuilds into V4 Atomic, 
 → Das Ergebnis (`variable_map`, `class_map`) ist die Design-System-Basis für die anschließende Seiten-Konvertierung.
 
 ### Schritt 3: Seitenbaum nach V4 Atomic umbauen
-```json
-{
-  "ability": "novamira/elementor-get-content",
-  "parameters": { "post_id": 1234, "full_dump": true }
-}
-```
-→ V3-Struktur analysieren und Abschnitt für Abschnitt in einen V4 Atomic Tree umbauen.
-→ Mapping: `section`/`column` → `e-div-block`/`e-flexbox`, `heading` → `e-heading`, `text-editor` → `e-paragraph`, `button` → `e-button`, `image` → `e-image`.
-→ Global Classes und Variables aus Schritt 2 zuweisen. V3 Widgets nur behalten, wenn es kein sicheres Atomic-Pendant gibt.
 
+Zuerst Dry Run — kein Schreibzugriff, nur Vorschau und Stats:
 ```json
 {
-  "ability": "novamira-adrianv2/batch-build-page",
-  "parameters": { "post_id": 1234, "elements": [] }
+  "ability": "novamira-adrianv2/convert-page-v3-to-v4",
+  "parameters": { "post_id": 1234, "dry_run": true, "unknown_widget_strategy": "keep_v3" }
 }
 ```
+→ Gibt `converted_tree`, `stats` und `warnings` zurück. `stats.unsupported_widgets` prüfen — sind die akzeptabel?
+
+Dann schreiben — empfohlen in eine Kopie (nicht das Original überschreiben):
+```json
+{
+  "ability": "novamira-adrianv2/convert-page-v3-to-v4",
+  "parameters": { "post_id": 1234, "target_post_id": 5678, "dry_run": false, "unknown_widget_strategy": "keep_v3" }
+}
+```
+→ Mapping: `section` → `e-flexbox`, `column` → `e-div-block`, `heading` → `e-heading`, `text-editor` → `e-paragraph`, `button` → `e-button`, `image` → `e-image`, `divider` → `e-divider`, `spacer` → `e-div-block+padding`.
+→ V3 Widgets ohne Atomic-Pendant werden nach `unknown_widget_strategy` behandelt (`keep_v3` = unverändert übernehmen).
 
 ### Schritt 4: Post-Conversion Audit
 ```json
