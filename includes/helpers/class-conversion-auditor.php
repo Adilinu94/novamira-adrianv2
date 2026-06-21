@@ -347,7 +347,7 @@ final class Conversion_Auditor {
 							'type'       => 'responsive',
 							'severity'   => 'warning',
 							'element_id' => $el_id,
-							'message'    => "Style class '$class_id' has fixed width ${size}px with no responsive alternative — may overflow on small screens.",
+							'message'    => "Style class '$class_id' has fixed width {$size}px with no responsive alternative — may overflow on small screens.",
 						);
 					}
 				}

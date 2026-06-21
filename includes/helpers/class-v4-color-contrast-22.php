@@ -19,6 +19,8 @@ if (!defined('ABSPATH')) exit();
 /**
  * @deprecated 1.3.0 Use V4_Color_Contrast — all WCAG 2.2 features merged there.
  */
+_deprecated_file( __FILE__, '1.3.0', 'includes/helpers/class-v4-color-contrast.php', 'Use V4_Color_Contrast directly — all WCAG 2.2 methods have been merged into the base class.' );
+
 class V4_Color_Contrast_22 extends V4_Color_Contrast {
     // All WCAG 2.2 constants inherited from V4_Color_Contrast:
     //   TARGET_SIZE_MIN = 24

@@ -15,7 +15,9 @@ $novamira_adrianv2_elementor_files = array(
 	__DIR__ . '/class-batch-class.php',
 	__DIR__ . '/class-batch-get-content.php',
 	__DIR__ . '/class-clone-element.php',
+	__DIR__ . '/class-apply-variable-map-to-page.php',
 	__DIR__ . '/class-convert-page-v3-to-v4.php',
+	__DIR__ . '/class-convert-site-v3-to-v4.php',
 	__DIR__ . '/_deprecated/class-convert-kit-to-v4.php',
 	__DIR__ . '/class-create-component.php',
 	__DIR__ . '/class-detach-component.php',
@@ -138,4 +140,10 @@ if ( class_exists( 'Novamira\AdrianV2\Abilities\Elementor\Convert_Page_V3_To_V4'
 }
 if ( class_exists( 'Novamira\\AdrianV2\\Abilities\\Elementor\\Elementor_Check_Setup' ) && method_exists( 'Novamira\\AdrianV2\\Abilities\\Elementor\\Elementor_Check_Setup', 'register' ) ) {
 	Novamira\AdrianV2\Abilities\Elementor\Elementor_Check_Setup::register();
+}
+if ( class_exists( 'Novamira\AdrianV2\Abilities\Elementor\Apply_Variable_Map_To_Page' ) && method_exists( 'Novamira\AdrianV2\Abilities\Elementor\Apply_Variable_Map_To_Page', 'register' ) ) {
+	Novamira\AdrianV2\Abilities\Elementor\Apply_Variable_Map_To_Page::register();
+}
+if ( class_exists( 'Novamira\AdrianV2\Abilities\Elementor\Convert_Site_V3_To_V4' ) && method_exists( 'Novamira\AdrianV2\Abilities\Elementor\Convert_Site_V3_To_V4', 'register' ) ) {
+	Novamira\AdrianV2\Abilities\Elementor\Convert_Site_V3_To_V4::register();
 }

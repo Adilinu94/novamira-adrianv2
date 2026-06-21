@@ -1,0 +1,42 @@
+name: Psalm Static Analysis
+
+on:
+  push:
+    branches: [ master, main, develop ]
+  pull_request:
+    branches: [ master, main, develop ]
+
+jobs:
+  psalm:
+    runs-on: ubuntu-latest
+    name: Psalm (PHP Static Analysis)
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, dom
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Run Psalm
+        run: |
+          ./vendor/bin/psalm \
+            --config=psalm.xml \
+            --output-format=github \
+            --no-progress \
+            --show-info=false \
+            --report=psalm-report.sarif \
+            || true
+
+      - name: Upload Psalm SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        continue-on-error: true
+        with:
+          sarif_file: psalm-report.sarif
