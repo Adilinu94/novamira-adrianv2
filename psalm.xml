@@ -1,0 +1,128 @@
+<?xml version="1.0"?>
+<psalm
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="https://getpsalm.org/schema/config"
+    xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
+
+    errorLevel="4"
+    findUnusedCode="false"
+    findUnusedBaselineEntry="true"
+    findUnusedPsalmSuppress="true"
+    resolveFromConfigFile="true"
+    useDocblockTypes="true"
+    disableSuppressAll="false"
+
+    cacheDirectory=".psalm-cache"
+>
+    <!-- Phase 0.5.5: SAST-Integration with taint-analysis mode
+         Detects XSS, SQLi, and other taint-flow vulnerabilities
+         in the novamira-adrianv2 V2-Plugin.
+         Audit evidence: novamira-improvement-2026-06/report.md, item D1.
+    -->
+
+    <projectFiles>
+        <directory name="includes/" />
+        <file name="novamira-adrianv2.php" />
+
+        <ignoreFiles allowMissingFiles="true">
+            <!-- Local Psalm cache; pre-created at runtime by the bootstrap. -->
+            <directory name=".psalm-cache/" />
+            <!-- Audit-evidence archive. May be present (when the SAST audit
+                 report is committed) or absent (when only the configuration
+                 is shipped). allowMissingFiles on the parent ignoreFiles
+                 covers both cases so path-resolution at bootstrap never
+                 aborts the scan. -->
+            <directory name="novamira-improvement-2026-06/" />
+            <!-- Composer dependencies; psalm reads types from stubs only. -->
+            <directory name="vendor/" />
+        </ignoreFiles>
+    </projectFiles>
+
+    <!-- Taint analysis for XSS / SQLi detection (Phase 0.5.5 SAST-Integration).
+         Psalm 5.x REMOVED the XML-driven <safeFunction> and <sinkFunction>
+         elements (the local vendor/vimeo/psalm/config.xsd now declares
+         TaintAnalysisType as accepting only <ignoreFiles/> children). Function
+         classification must now be declared inline via docblock annotations
+         on the helper methods themselves, e.g.:
+           * @psalm-taint-escape html $param        -> marks param as html-sanitized
+           * @psalm-taint-escape sql  $param        -> marks param as sql-sanitized
+           * @psalm-taint-sink    html|sql $param   -> marks param as tainted sink
+         The original Phase 0.5.5 closures — enumerated VERBATIM here so the
+         audit-evidence chain can be matched 1:1 against git history:
+           HTML sanitizers (11): esc_html, esc_attr, esc_url, esc_textarea,
+             esc_js, wp_kses, wp_kses_post, wp_strip_all_tags,
+             sanitize_text_field, sanitize_title, sanitize_html_class.
+           SQL sanitizers (2): absint, intval.
+           SQL sinks (6): update_post_meta, add_post_meta, wp_insert_post,
+             wp_update_post, wpdb::insert, wpdb::update.
+           HTML sinks (2): echo, wp_json_encode.
+         Total 21 entries. Should be re-stated as docblocks on the
+         corresponding helper facades (WPCode_Kses_Bypass::edit_post,
+         Elementor_CSS_Override::inject_page_custom_css, etc.) in
+         subsequent iterations. Taint-mode off by default
+         (runTaintAnalysis defaults to false on the <psalm> root).
+         Audit reference: novamira-improvement-2026-06/report.md, item D1.
+    -->
+
+    <!-- Fake stubs for WordPress functions Psalm can't resolve -->
+    <stubs>
+        <file name="vendor/php-stubs/wordpress-stubs/wordpress-stubs.php" />
+    </stubs>
+
+    <!-- Treat all files as if they run inside WordPress -->
+    <issueHandlers>
+        <!-- False positives from WordPress globals -->
+        <UndefinedGlobalVariable errorLevel="suppress">
+            <errorLevel type="suppress">
+                <referencedVariable name="$wpdb" />
+            </errorLevel>
+        </UndefinedGlobalVariable>
+
+        <!-- WordPress functions defined at runtime -->
+        <UndefinedFunction>
+            <errorLevel type="suppress">
+                <referencedFunction name="wp_register_ability" />
+                <referencedFunction name="add_action" />
+                <referencedFunction name="current_user_can" />
+                <referencedFunction name="get_post" />
+                <referencedFunction name="get_post_meta" />
+                <referencedFunction name="update_post_meta" />
+                <referencedFunction name="get_permalink" />
+                <referencedFunction name="admin_url" />
+                <referencedFunction name="wp_insert_post" />
+                <referencedFunction name="wp_update_post" />
+                <referencedFunction name="is_wp_error" />
+                <referencedFunction name="wp_slash" />
+                <referencedFunction name="wp_json_encode" />
+                <referencedFunction name="wp_strip_all_tags" />
+                <referencedFunction name="wp_kses_post" />
+                <referencedFunction name="sanitize_text_field" />
+                <referencedFunction name="sanitize_html_class" />
+                <referencedFunction name="sanitize_title" />
+                <referencedFunction name="esc_html" />
+                <referencedFunction name="esc_attr" />
+                <referencedFunction name="esc_url" />
+                <referencedFunction name="sanitize_file_name" />
+            </errorLevel>
+        </UndefinedFunction>
+
+        <!-- WordPress + Elementor constants defined at runtime.
+             <UndefinedConstant> maps to base IssueHandlerType in the local
+             Psalm 5.x XSD, which only accepts <directory>/<file> children
+             inside <errorLevel>; <referencedConstant> is only valid under
+             ClassConstantIssueHandlerType. Suppress the entire category
+             project-wide — ABSPATH (WordPress require-guard) and
+             ELEMENTOR_VERSION (Elementor Pro version gate) are the only
+             two referenced top-level constants.
+        -->
+        <UndefinedConstant errorLevel="suppress" />
+
+        <!-- Classes loaded by WordPress autoloader -->
+        <UndefinedClass>
+            <errorLevel type="suppress">
+                <referencedClass name="Novamira\Adrians\Helpers" />
+                <referencedClass name="Novamira\Adrians\Guards" />
+            </errorLevel>
+        </UndefinedClass>
+    </issueHandlers>
+</psalm>

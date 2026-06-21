@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<ruleset name="Novamira AdrianV2">
+    <description>PHP CodeSniffer rules for Novamira AdrianV2 Plugin</description>
+
+    <file>./includes/</file>
+    <file>./novamira-adrianv2.php</file>
+
+    <exclude-pattern>*/vendor/*</exclude-pattern>
+    <exclude-pattern>*/node_modules/*</exclude-pattern>
+
+    <arg name="colors"/>
+    <arg value="sp"/>
+
+    <rule ref="WordPress">
+        <exclude name="WordPress.Files.FileName.NotHyphenatedLowercase"/>
+        <exclude name="WordPress.Files.FileName.InvalidClassFileName"/>
+        <exclude name="WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase"/>
+    </rule>
+
+    <rule ref="Generic.CodeAnalysis.UnusedFunctionParameter">
+        <exclude name="Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed"/>
+    </rule>
+
+    <config name="minimum_supported_wp_version" value="6.4"/>
+
+    <rule ref="PHPCompatibilityWP"/>
+    <config name="testVersion" value="8.0-"/>
+</ruleset>

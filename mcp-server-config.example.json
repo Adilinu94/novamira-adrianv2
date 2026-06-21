@@ -1,0 +1,24 @@
+{
+  "_comment": "Beispiel-Konfiguration für den Novamira MCP-Server. Kopiere diese Datei zu mcp-server-config.json und trage deine echten Werte ein. Die Datei enthält Zugangsdaten — niemals in Git committen.",
+  "mcpServers": {
+    "novamira-adrianv2": {
+      "type": "streamable-http",
+      "url": "https://your-site.local/wp-json/mcp/novamira",
+      "headers": {
+        "Authorization": "Bearer YOUR_NOVAMIRA_API_TOKEN_HERE"
+      },
+      "_comment_url": "Ersetze 'your-site.local' durch deine WordPress-URL. Der Pfad /wp-json/mcp/novamira ist der Standard-Endpoint des Novamira-Base-Plugins.",
+      "_comment_token": "Den Token findest du in deinem WordPress-Admin unter Novamira → API-Tokens."
+    },
+    "novamira-adrianv2-local": {
+      "_comment": "Beispiel für einen lokalen Dev-Install (LocalWP / DDEV).",
+      "type": "streamable-http",
+      "url": "https://treets.local/wp-json/mcp/novamira",
+      "headers": {
+        "Authorization": "Bearer YOUR_LOCAL_TOKEN_HERE"
+      }
+    }
+  },
+  "_note_connection_test": "Verbindung testen: POST zu {url} mit Body {\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{},\"clientInfo\":{\"name\":\"test\",\"version\":\"0\"}}}. Erwartete Antwort: 200 + {\"result\":{\"protocolVersion\":...}}",
+  "_note_abilities": "Fähigkeiten auflisten: Ability 'novamira-adrianv2/hello-world' aufrufen um die Verbindung zu verifizieren. Alle Abilities starten mit 'novamira-adrianv2/'."
+}
