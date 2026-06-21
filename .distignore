@@ -1,0 +1,50 @@
+# Dev & build tools
+composer.phar
+composer.lock
+phpcs.xml
+phpunit.xml.dist
+psalm.xml
+
+# Docs & planning
+docs/
+.planning/
+ADRIANV2-ANALYSE-UND-V3V4-PLAN.md
+BAUPLAN.txt
+CHANGELOG.md
+E2E-TEST-ANALYSE.md
+novamira-adrianv2-v3-v4-konvertierung-analyse.md
+README.md
+
+# Git
+.git/
+.gitattributes
+.gitignore
+.github/
+
+# IDE
+.idea/
+.vscode/
+
+# Tests
+tests/
+.phpunit.cache/
+.phpunit.result.cache
+
+# Scripts
+scripts/
+tools/
+
+# Config
+mcp-server-config.example.json
+.env
+.env.local
+
+# AI config
+.claude/
+.commandcode/
+
+# Personal notes
+REMEMBER.md
+
+# OS files
+.DS_Store
