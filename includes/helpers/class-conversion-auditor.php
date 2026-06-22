@@ -238,7 +238,7 @@ final class Conversion_Auditor {
 					'type'       => 'class',
 					'severity'   => 'error',
 					'element_id' => $referrers[0] ?? '?',
-					'message'    => "Class '$class_id' is referenced $count× (by $ref_str) but is not defined in any styles map.",
+					'message'    => "Class '$class_id' is referenced {$count}× (by $ref_str) but is not defined in any styles map.",
 				);
 			}
 		}

@@ -61,6 +61,13 @@ final class V3_To_V4_Converter {
 			$color_index = self::build_color_index( $variable_map );
 		}
 
+		// Ensure all stat keys exist — callers that pass $stats = [] won't trigger PHP undefined-key warnings.
+		$stats['elements_read']       ??= 0;
+		$stats['converted']           ??= 0;
+		$stats['kept_v3']             ??= 0;
+		$stats['skipped']             ??= 0;
+		$stats['unsupported_widgets'] ??= [];
+
 		$out = array();
 		foreach ( $elements as $el ) {
 			if ( ! is_array( $el ) ) {

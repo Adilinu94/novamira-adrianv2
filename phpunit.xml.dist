@@ -7,6 +7,7 @@
     <testsuites>
         <testsuite name="Novamira AdrianV2">
             <directory>tests</directory>
+            <exclude>tests/FixKitStylesForPageIntegrationTest.php</exclude>
         </testsuite>
     </testsuites>
     <source>

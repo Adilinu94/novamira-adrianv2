@@ -315,7 +315,7 @@ final class ConversionAuditorTest extends TestCase
                 'elType'     => 'widget',
                 'widgetType' => 'e-heading',
                 'settings'   => [
-                    'classes' => [ '$$type' => 'classes', 'value' => [ 'gc-missing-class' ] ],
+                    'classes' => [ '$$type' => 'classes', 'value' => [ 'e-local-missing' ] ],
                     'title'   => 'Has dangling ref',
                 ],
                 'elements' => [],
@@ -327,7 +327,7 @@ final class ConversionAuditorTest extends TestCase
 
         $class_errors = Conversion_Auditor::filter( $issues, 'class', 'error' );
         $this->assertCount( 1, $class_errors );
-        $this->assertStringContainsString( 'gc-missing-class', $class_errors[0]['message'] );
+        $this->assertStringContainsString( 'e-local-missing', $class_errors[0]['message'] );
         $this->assertStringContainsString( 'not defined', $class_errors[0]['message'] );
     }
 
