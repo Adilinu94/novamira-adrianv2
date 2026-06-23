@@ -18,6 +18,7 @@ $files = [
     __DIR__ . '/class-kit-media-handler.php',
     __DIR__ . '/class-kit-font-localizer.php',
     __DIR__ . '/class-kit-self-heal.php',
+    __DIR__ . '/class-editor-health-check.php',
     __DIR__ . '/class-import-template-kit.php',
 ];
 foreach ($files as $f) {

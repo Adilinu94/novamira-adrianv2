@@ -206,13 +206,23 @@ class Import_Template_Kit {
 			$phases_out['menus'] = array_merge( [ 'status' => 'completed' ], $menus_result );
 		}
 
-		// ── PHASE 5: CACHE ───────────────────────────────────────────────────
+		// ── PHASE 5: CACHE + SELF-HEAL + EDITOR HEALTH ──────────────────────
 
 		if ( ! $dry_run && ! empty( $id_map ) ) {
 			foreach ( $id_map as $post_id ) {
 				delete_post_meta( (int) $post_id, '_elementor_css' );
 			}
-			$phases_out['cache'] = [ 'status' => 'invalidated', 'posts' => count( $id_map ) ];
+
+			$heal          = Kit_Self_Heal::run_all( false );
+			$first_post_id = (int) reset( $id_map );
+			$health        = Kit_Editor_Health::check_editor( $first_post_id );
+
+			$phases_out['post_import'] = [
+				'status'        => 'completed',
+				'cache_posts'   => count( $id_map ),
+				'self_heal'     => $heal,
+				'editor_health' => $health,
+			];
 		}
 
 		// ── MEDIA / FONTS / PLUGIN INSTALL — deferred ────────────────────────
