@@ -25,3 +25,4 @@ require_once __DIR__ . '/../includes/helpers/class-conversion-auditor.php';
 
 // 4. Abilities under test.
 require_once __DIR__ . '/../includes/abilities/elementor/class-design-token-remap.php';
+require_once __DIR__ . '/../includes/abilities/elementor-templates/class-kit-manifest.php';
