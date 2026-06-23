@@ -1,5 +1,41 @@
 # Changelog — Novamira AdrianV2
 
+## [1.6.0] — 2026-06-23
+
+### Added
+
+#### `Local_Styles_Renderer` — Frontend-CSS-Workaround für Elementor 4.1.x
+- **Problem:** `elementor/atomic-widgets/styles/register` wird im Elementor 4.1.x Frontend nie gefeuert. Alle Atomic Widget CSS-Klassen (`.e-{style_id}`) haben kein CSS-Backing → Schriften, Farben, Abstände sichtbar nicht gerendert.
+- Neue Klasse `Novamira\AdrianV2\Helpers\Local_Styles_Renderer` in `includes/helpers/class-local-styles-renderer.php`.
+- Hängt sich in `wp_head` (Priorität 100) ein.
+- Liest `_elementor_data` direkt via `$wpdb->get_var()` (kein `wp_unslash`-Problem).
+- Läuft rekursiv durch den Element-Tree, sammelt alle `element.styles`-Maps.
+- Emittiert `<style id="novamira-atomic-styles">` mit einer CSS-Regel pro Stil-Variante.
+- **`prop_to_css()` Mapping:**
+  - `global-color-variable` → `var(--e-gv-{id})`
+  - `color` → `#HEX` / `rgba()` / `hsl()` as stored
+  - `size` → `{n}{unit}` z.B. `16px`, `1.5rem`
+  - `dimensions` → expandiert zu `padding-block-start`, `padding-inline-end` etc.
+  - `string`, `number`, `boolean` → Rohwert
+- **Responsive:** `desktop` = kein Wrapper, `tablet` = `max-width: 1024px`, `mobile` = `max-width: 767px`.
+- **Disable Gate:** Automatische Deaktivierung bei `ELEMENTOR_VERSION >= 4.2.0`. Außerdem per Filter override-bar: `add_filter('novamira_adrianv2/local_styles_renderer/enabled', '__return_false')`.
+- **Autoloader:** Klasse in `vendor/composer/autoload_classmap.php` und `vendor/composer/autoload_static.php` eingetragen.
+- Registrierung in `includes/helpers/bootstrap.php` (Schritt 19).
+
+#### PHPUnit Tests — `LocalStylesRendererTest`
+- 33 neue Assertions in `tests/LocalStylesRendererTest.php`.
+- Deckt ab: alle `$$type`-Fälle in `prop_to_css()`, `dimensions_shorthand()`, `dimensions_to_declarations()`, `collect_styles()` (flach, tief, Deduplizierung, Fehlertoleranz), `render_style_def()` (Selektor-Prefix, `@media`, Pseudo-Klassen, leere Varianten, übersprungene Props).
+- `tests/bootstrap.php` um WP-Stubs (`add_action`, `apply_filters`) und `ELEMENTOR_VERSION`-Konstante erweitert.
+
+### Fixed
+
+#### Version-Alignierung
+- Plugin-Header `Version: 1.0.0` → `1.6.0`
+- Konstante `NOVAMIRA_ADRIANV2_VERSION` `1.1.0` → `1.6.0`
+- Beide lagen bisher hinter dem CHANGELOG zurück; jetzt aligned.
+
+---
+
 ## [1.5.0] — 2026-06-21
 
 ### Added

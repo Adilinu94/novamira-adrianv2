@@ -77,21 +77,15 @@ require_once WP_PLUGIN_DIR . '/novamira-adrianv2/includes/helpers/class-conversi
 
 ---
 
-### 3.3 ❌ OFFEN — Layout-Verstoß: Widgets direkt in e-flexbox
+### 3.3 ✅ ERLEDIGT — Layout-Verstoß: Widgets direkt in e-flexbox
 
-**Problem:** Alle 3 konvertierten Container haben Widgets direkt als Kinder von `e-flexbox` — ohne `e-div-block` dazwischen. Der Audit-Hinweis lautet:
-```
-e-flexbox contains direct widget children without intermediate container (e-div-block)
-```
+**Problem:** Alle 3 konvertierten Container hatten Widgets direkt als Kinder von `e-flexbox` ohne `e-div-block` dazwischen.
 
-**Auswirkung für KI:** Das ist ein V4-Layout-Constraint. In Elementor V4 Atomic sollten Widgets innerhalb von `e-div-block`-Containern liegen. Ohne Fix werden konvertierte Seiten nicht korrekt im V4-Editor dargestellt.
-
-**🔧 Benötigte Ability-Erweiterung:**
-Der `V3_To_V4_Converter` sollte automatisch für jedes direkte Widget-Kind eines `e-flexbox` die Elemente in `e-div-block` wrappen:
-```
-e-flexbox → e-div-block → e-heading
-         → e-div-block → e-paragraph
-```
+**✅ Fix implementiert in `Conversion_AutoFixer::fix_flexbox_widget_children()` (v1.5.0):**
+- Aufgerufen als Schritt 1c in `Conversion_AutoFixer::run()` beim `auto_fix: true` Modus.
+- Wrapped direkte Widget-Kinder von `e-flexbox` automatisch in `e-div-block`.
+- Depth Guard: bei MAX_NESTING_DEPTH wird `e-flexbox` zu `e-div-block` konvertiert falls keine Flex-Layout-Settings vorhanden.
+- Keine separate `e-div-block-wrap`-Ability nötig — der AutoFixer deckt es intern ab.
 
 ---
 
@@ -170,7 +164,7 @@ Die konvertierte Seite hat `_elementor_version` 4.1.3. Das ist gut — aber der 
 
 | Name | Problem | Beschreibung |
 |---|---|---|
-| `e-div-block-wrap` | 3.3 Layout-Verstoß | Wrapped direkte Widgets in e-flexbox in e-div-block-Container |
+| ~~`e-div-block-wrap`~~ | 3.3 ✅ ERLEDIGT | `Conversion_AutoFixer::fix_flexbox_widget_children()` — intern im AutoFixer |
 | `batch-apply-base-class` | 4.1 Fehlende Base Classes | Wendet e-flexbox-base auf alle Container einer Seite an |
 
 ### Priorität 3 (Komfort)
