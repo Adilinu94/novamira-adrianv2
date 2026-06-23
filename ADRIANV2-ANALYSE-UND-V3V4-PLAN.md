@@ -126,20 +126,51 @@ MCP Adapter (Novamira Core) ──── wp_abilities_api
 - **Utilities:** `greet`, `self-audit`, `get-project-styles`, `execute-build-plan`
 - **Batch:** `batch-build-page`, `batch-class`, `batch-get-content`, `batch-media-upload`
 
+### 2.10 ✅ Local_Styles_Renderer — Frontend-CSS-Workaround (Elementor 4.1.x)
+
+**Implementiert in:** `includes/helpers/class-local-styles-renderer.php` (v1.2.0)
+
+**Problem:** Elementor 4.1.x feuert den Hook `elementor/atomic-widgets/styles/register` im Frontend nicht. Die Atomic Widget CSS Pipeline läuft daher nie, alle lokalen Style-Klassen (`.e-{style_id}`) haben kein CSS-Backing.
+
+**Lösung:** `Local_Styles_Renderer` hookt sich in `wp_head` (Priorität 100), liest `_elementor_data` direkt via `$wpdb` aus der DB (kein `wp_unslash`-Problem), durchläuft den Element-Tree rekursiv, sammelt alle `element.styles`-Maps und emittiert einen inline `<style id="novamira-atomic-styles">`-Block.
+
+**`prop_to_css()` Mapping:**
+
+| `$$type` | CSS-Wert |
+|---|---|
+| `global-color-variable` | `var(--e-gv-{id})` |
+| `color` | `#HEX` / `rgba()` / `hsl()` |
+| `size` | `{n}{unit}` z.B. `16px` |
+| `dimensions` | expandiert zu `padding-block-start` etc. |
+| `string` | roher Wert (font-family, flex-direction …) |
+| `number` | roher Zahlenwert (z-index, flex-grow …) |
+
+**Responsive:** `desktop` = kein Media-Query, `tablet` = `max-width: 1024px`, `mobile` = `max-width: 767px`.
+
+**Selector-Format:** `.{style_id}` wenn style_id bereits `e-` Prefix hat; sonst `.e-{style_id}`.
+
+**Disable Gate:** Automatische Deaktivierung bei `ELEMENTOR_VERSION >= 4.2.0`. Außerdem per Filter override-bar:
+```php
+add_filter('novamira_adrianv2/local_styles_renderer/enabled', '__return_false');
+```
+
+
 ---
 
 ## 3. ❌ Noch zu tun — Verbleibende Lücken
 
-### 3.1 🔴 Phase 4 Dokumentation fehlt
+### 3.1 ✅ ERLEDIGT — Phase 4 Dokumentation
 
-Kein `docs/` Verzeichnis vorhanden. Fehlen:
-- `docs/SKILLS-INVENTORY.md` — Tabelle aller 9 Skills mit Slug, Trigger, Beispiel-Aufruf
-- `docs/V3-V4-DECISION-TREE.md` — Entscheidungsbaum: detect → V3→convert → V4→setup
-- `docs/CHANGELOG-v2-detailed.md` — Detaillierte Migrations-History
+Dokumentations-Dateien existieren im Projekt-Root:
+- `SKILLS-INVENTORY.md` ✅
+- `V3-V4-DECISION-TREE.md` ✅
+- `CHANGELOG-v2-detailed.md` ✅
+- `atomic-css-pipeline.md` ✅ (neu)
+- `BAUPLAN-OFFENE-PUNKTE.md` ✅ (neu)
 
-### 3.2 🔴 Keine CI/CD
+### 3.2 ✅ ERLEDIGT — CI/CD
 
-Kein `.github/workflows/` für PHPUnit, phpcs, Psalm bei Push.
+`.github/workflows/` enthält `phpunit.yml`, `phpcs.yml`, `psalm.yml`, `release.yml`.
 
 ### 3.3 🟠 Offene Security-Findings
 
@@ -166,9 +197,9 @@ Nur für WPCode (`wpcode-check-setup`) + Elementor (`elementor-check-setup`) vor
 
 Sauber als `extends V4_Color_Contrast` markiert, liefert aber keine eigenen Werte mehr. Könnte entfernt oder mit `_deprecated_file()` versehen werden.
 
-### 3.7 🟡 Bulk-Konvertierung `convert-site-v3-to-v4`
+### 3.7 ✅ ERLEDIGT — Bulk-Konvertierung `convert-site-v3-to-v4`
 
-Nicht implementiert. Könnte `list-elementor-pages` nutzen → für jede V3-Seite `convert-page-v3-to-v4` aufrufen.
+Implementiert in `includes/abilities/v4-management/`. Nutzt SQL-basierte Auto-Discovery mit Pagination.
 
 ### 3.8 🟡 `design-token-remap` Ability
 
@@ -310,13 +341,14 @@ Schritt 6: Post-Conversion Audits
 | # | Aufgabe | Aufwand | Wert | Status |
 |---|---|---|---|---|
 | 1 | `convert-page-v3-to-v4` | L (3–5 Tage) | ⭐⭐⭐⭐⭐ | ✅ **Erledigt** |
+| 1b | `Local_Styles_Renderer` — Frontend-CSS-Workaround für Elementor 4.1.x | S (2h) | ⭐⭐⭐⭐⭐ | ✅ **Erledigt** |
 | 2 | `detect-elementor-version` | S (1h) | ⭐⭐⭐⭐ | ✅ **Erledigt** |
 | 3 | `elementor-check-setup` | M (2–3h) | ⭐⭐⭐⭐ | ✅ **Erledigt** |
-| 4 | Phase 4 Docs (SKILLS-INVENTORY, V3-V4-DECISION-TREE, CHANGELOG) | M (2–3h) | ⭐⭐⭐ | ❌ **Offen** |
-| 5 | GitHub Actions CI | M (2h) | ⭐⭐⭐ | ❌ **Offen** |
+| 4 | Phase 4 Docs (SKILLS-INVENTORY, V3-V4-DECISION-TREE, CHANGELOG) | M (2–3h) | ⭐⭐⭐ | ✅ **Erledigt** |
+| 5 | GitHub Actions CI | M (2h) | ⭐⭐⭐ | ✅ **Erledigt** |
 | 6 | Security-Findings (B8, B9, SAST, axe-core) | M (pro Finding) | ⭐⭐⭐ | ⚠️ Offen |
 | 7 | `check-setup` für AIOSEO/Yoast/Rank Math/WooCommerce | M (pro Plugin) | ⭐⭐ | ⚠️ Offen |
-| 8 | `convert-site-v3-to-v4` (Bulk) | L (2–3 Tage) | ⭐⭐ | ❌ **Offen** |
+| 8 | `convert-site-v3-to-v4` (Bulk) | L (2–3 Tage) | ⭐⭐ | ✅ **Erledigt** |
 | 9 | SEO-Mutation-Abilities (set-rank-math-meta) | M | ⭐⭐ | ⚠️ Teilweise via generate-meta-tags |
 | 10 | `design-token-remap` | XL | ⭐⭐ | ❌ **Offen** |
 | 11 | Widget-Mapping-Lücken (youtube, video) | S | ⭐⭐ | ⚠️ Offen |

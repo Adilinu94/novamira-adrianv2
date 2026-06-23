@@ -37,7 +37,7 @@
 
 ## 3. 🔴 KRITISCHE Schwachstellen
 
-### 3.1 Autoloader: V3_To_V4_Converter wird nicht gefunden
+### 3.1 ✅ ERLEDIGT — Autoloader: V3_To_V4_Converter wird nicht gefunden
 
 **Problem:** Die Klasse `Novamira\AdrianV2\Helpers\V3_To_V4_Converter` existiert in `includes/helpers/class-v3-to-v4-converter.php`, wird aber vom Plugin-Autoloader nicht geladen. Die `Convert_Page_V3_To_V4`-Klasse (die via Novamira-Pro-Abilities-Registry registriert ist) scheitert mit:
 ```
@@ -60,7 +60,7 @@ require_once WP_PLUGIN_DIR . '/novamira-adrianv2/includes/helpers/class-conversi
 
 ---
 
-### 3.2 Global-Color-Referenzen gehen verloren
+### 3.2 ✅ ERLEDIGT — Global-Color-Referenzen gehen verloren
 
 **Problem:** Die `variable_map` aus `kit-convert-v3-to-v4` wird zwar an `convert-page-v3-to-v4` übergeben, aber der JSON-Converter nutzt sie nicht zum Ersetzen von Hex-Farben durch GV-Referenzen. 
 
@@ -77,7 +77,7 @@ require_once WP_PLUGIN_DIR . '/novamira-adrianv2/includes/helpers/class-conversi
 
 ---
 
-### 3.3 Layout-Verstoß: Widgets direkt in e-flexbox
+### 3.3 ❌ OFFEN — Layout-Verstoß: Widgets direkt in e-flexbox
 
 **Problem:** Alle 3 konvertierten Container haben Widgets direkt als Kinder von `e-flexbox` — ohne `e-div-block` dazwischen. Der Audit-Hinweis lautet:
 ```
@@ -95,7 +95,7 @@ e-flexbox → e-div-block → e-heading
 
 ---
 
-### 3.4 JSON-Korruption beim Kopieren von Elementor-Daten
+### 3.4 ✅ ERLEDIGT — JSON-Korruption beim Kopieren von Elementor-Daten
 
 **Problem:** WordPress' `update_post_meta()` wendet `wp_slash()`/`wp_unslash()` an, was die `\"`-Escapes in Elementor-JSON korrumpiert:
 ```
@@ -124,7 +124,7 @@ $wpdb->replace($wpdb->postmeta, [
 
 ---
 
-### 3.5 Kit-Convert ID-Inkonsistenz
+### 3.5 ⚠️ OFFEN — Kit-Convert ID-Inkonsistenz
 
 **Problem:** Jeder Aufruf von `kit-convert-v3-to-v4` generiert NEUE `e-gv-*` IDs für die gleichen Farben. Beim ersten Aufruf wird z.B. `accent` → `e-gv-bebd7fa`, beim zweiten → `e-gv-154a25a`, beim dritten → `e-gv-f43276f`, etc. Die `_elementor_global_variables` DB-Meta wird auch nicht mit den tatsächlichen IDs befüllt — die Variable-Map enthält andere IDs als die DB.
 
@@ -162,9 +162,9 @@ Die konvertierte Seite hat `_elementor_version` 4.1.3. Das ist gut — aber der 
 
 | Name | Problem | Beschreibung |
 |---|---|---|
-| `ensure-converter-loaded` | 3.1 Autoloader | Lädt alle Converter-Dependencies via `spl_autoload_register` oder `require_once` |
-| `apply-variable-map-to-page` | 3.2 GV-Referenzen | Ersetzt Hex-Farbwerte in einer Seite durch GV-Referenzen aus variable_map |
-| `clone-elementor-page` (Fix) | 3.4 JSON-Korruption | Kopiert _elementor_data + alle Meta-Keys sauber via SQL |
+| ~~`ensure-converter-loaded`~~ | 3.1 ✅ ERLEDIGT | Fix in `bootstrap.php` — explizite `require_once` für alle Converter-Klassen |
+| ~~`apply-variable-map-to-page`~~ | 3.2 ✅ ERLEDIGT | Ability `class-apply-variable-map-to-page.php` implementiert |
+| ~~`clone-elementor-page`~~ | 3.4 ✅ ERLEDIGT | `duplicate-page` nutzt `get_raw_meta_value()` + `copy_raw_meta_values()` via SQL |
 
 ### Priorität 2 (Workflow-Qualität)
 
@@ -263,7 +263,15 @@ SCHRITT 8: Aufräumen
 
 ---
 
-## 8. 🔴 BLOCKER: CSS wird nicht generiert — Atomic-Style-Pipeline
+## 8. ✅ WORKAROUND IMPLEMENTIERT — CSS wird nicht generiert — Atomic-Style-Pipeline
+
+> **Update 2026-06-23:** Workaround `Local_Styles_Renderer` implementiert in  
+> `includes/helpers/class-local-styles-renderer.php` (Plugin v1.2.0).  
+> Hooks in `wp_head` (Prio 100), liest `_elementor_data` direkt via `$wpdb`,  
+> rendert alle `element.styles`-Maps als inline `<style id="novamira-atomic-styles">`.  
+> **Disable Gate:** Auto-deaktiviert bei Elementor ≥ 4.2.0.  
+> Siehe auch Section 10.6 Option C — als implementiert markiert.
+
 
 **Das schwerwiegendste Problem:** Selbst wenn `_elementor_data` korrekte V4-Daten enthält (gefixtes paragraph.content, image.src.id, headings mit tag, container layout props), **generiert Elementor 4.1.3 kein CSS für die lokalen Style-Klassen.**
 
@@ -475,7 +483,7 @@ e-image:
 |---|---|---|---|---|
 | **A** | Style-Eigenschaften direkt als `style`-Attribute auf die Elemente schreiben | Gering | Sofort sichtbar, kein CSS-Pipeline nötig | Umgeht V4-Architektur, keine Global-Class-Updates |
 | **B** | Atomic CSS Generator patchen (eigenen Hook feuern) | Mittel | Korrekte V4-Architektur | Patch muss bei jedem Elementor-Update angepasst werden |
-| **C** | Inline `<style>`-Block im Seiten-Header generieren | Gering | V4-konform, funktioniert sofort | Style-Updates nur via Page-Edit, nicht via Global Class |
+| **C** | ✅ Inline `<style>`-Block im Seiten-Header generieren | Gering | V4-konform, funktioniert sofort | Style-Updates nur via Page-Edit, nicht via Global Class |
 | **D** | V3-CSS-Generator patchen, Atomic-Styles in _elementor_css zu schreiben | Hoch | Nutzt existierende Post-CSS-Pipeline | Tiefster Eingriff, höchstes Konflikt-Risiko |
 
 **Empfohlen wird eine Kombination:**
