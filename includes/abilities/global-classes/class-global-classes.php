@@ -90,7 +90,7 @@ class Global_Classes {
                 'Resolves Elementor Class Manager (Global Classes) entries. Maps the opaque "g-" class IDs that appear on elements back to their human-readable names and the CSS properties they define, per breakpoint/state. Use it to understand what styling a g- class applies. Pass class_ids to resolve specific IDs, or omit to list them all. Read-only.',
                 'novamira-adrianv2'
             ),
-            'category'            => 'elementor',
+            'category'            => 'adrianv2-elementor',
             'execute_callback'    => [self::class, 'execute_list_global_classes'],
             'permission_callback' => 'novamira_permission_callback',
             'input_schema'        => [
