@@ -1,5 +1,52 @@
 # Changelog — Novamira AdrianV2
 
+## [1.5.0] — 2026-06
+
+### Added — ClonerLabs Integration
+
+**9 neue Abilities** in der Kategorie `adrianv2-clonerlabs`:
+
+| Ability | Beschreibung |
+|---|---|
+| `import-clonerlabs-page` | Haupt-Import: vollständiger Page-Export oder Saved Section (7-Phasen-Pipeline) |
+| `import-clonerlabs-batch` | Mehrere Exporte in einem Aufruf, mit eigenem Rollback-Snapshot |
+| `import-clonerlabs-library` | ClonerLabs Saved Sections → Elementor Library Templates |
+| `repair-clonerlabs-page` | Auto-Fix via Conversion_AutoFixer + ClonerLabs-spezifische Cleanup-Passes |
+| `convert-html-to-elementor` | Roh-HTML (Fallback-Widgets) → Elementor, mit korrektem `target_surface` Parameter |
+
+**3 neue Helper-Klassen:**
+- `ClonerLabs_Style_Minifier` — entfernt getComputedStyle()-Rauschen aus Exporten
+- `ClonerLabs_Media_Handler` — sideloaded SVG data-URIs UND externe Bild-URLs; konvertiert `e-svg` `svg_content` in V4-Format
+- `ClonerLabs_Global_Styles` — merged Farben/Typo in den aktiven Elementor-Kit (korrekter Schlüsselpfad: `settings.system_colors`)
+
+**18 Bugs gegenüber originalem Integrationsplan gefixt:**
+- `v4_strategy` Enum: `keep_v3/skip/error` (nicht `keep/html`)
+- Global Styles Key: `data['settings']` (nicht `data['global_styles']`)
+- Kit_Rollback umgangen (braucht Kit_Manifest) → eigener Snapshot in WP Options
+- `accordion` → `nested-accordion` widgetType dokumentiert
+- `e-svg svg_content` → sideload + V4-Format (nicht raw HTML in settings)
+- `_gsapCode` wird gesammelt und als page custom_js injiziert
+- `var(--e-global-color-*)` und `__globals__` im Style-Minifier geschützt
+- `site_settings` aus Schema entfernt (existiert nicht im Page-Export)
+- `custom-widget` → `html` widgetType Normalisierung
+- `Guards::save_elementor_data()` statt manuellem `update_post_meta`
+- `target_surface` statt `target` für Html_To_Elementor_Widget_Plan
+- `isLocked: true` Container in Style-Minifier und ID-Regen übersprungen
+- Library-Format: `elementorData` (nicht `mappedElements`)
+- Saved-Section-Normalisierung automatisch in Phase 1
+
+### Fixed
+- 4 Ability-Dateien hatten falschen Category-Slug `'elementor'` statt `'adrianv2-elementor'`:
+  - `atomic/class-atomic-layouts.php` (3 Vorkommen)
+  - `atomic/class-atomic-widgets.php` (3 Vorkommen)
+  - `global-classes/class-global-classes.php` (1 Vorkommen)
+  - `custom-code/class-custom-code.php` (2 Vorkommen)
+
+### Added
+- Neuer Skill `adrianv2-clonerlabs` in `includes/skills/adrianv2-clonerlabs/SKILL.md`
+
+---
+
 ## [1.7.0] — 2026-06-24
 
 ### Added
