@@ -36,7 +36,7 @@ class Convert_Page_V3_To_V4 {
 			array(
 				'label'               => 'Convert Page V3 to V4 Atomic',
 				'description'         => 'Converts an Elementor V3 page tree into V4 Atomic. Optionally runs kit-convert-v3-to-v4 first for design-system mapping (colors→variables, typography→global classes). Dry-run by default.',
-				'category'            => 'novamira-adrianv2',
+				'category'            => 'adrianv2-elementor',
 				'input_schema'        => array(
 					'type'       => 'object',
 					'properties' => array(
