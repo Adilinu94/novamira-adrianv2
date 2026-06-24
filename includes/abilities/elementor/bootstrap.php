@@ -148,3 +148,9 @@ if ( class_exists( 'Novamira\AdrianV2\Abilities\Elementor\Apply_Variable_Map_To_
 if ( class_exists( 'Novamira\AdrianV2\Abilities\Elementor\Convert_Site_V3_To_V4' ) && method_exists( 'Novamira\AdrianV2\Abilities\Elementor\Convert_Site_V3_To_V4', 'register' ) ) {
 	Novamira\AdrianV2\Abilities\Elementor\Convert_Site_V3_To_V4::register();
 }
+if ( class_exists( 'Novamira\AdrianV2\Abilities\Elementor\Design_Token_Remap' ) && method_exists( 'Novamira\AdrianV2\Abilities\Elementor\Design_Token_Remap', 'register' ) ) {
+	Novamira\AdrianV2\Abilities\Elementor\Design_Token_Remap::register();
+}
+if ( class_exists( 'Novamira\AdrianV2\Abilities\Elementor\Design_Token_Remap' ) && method_exists( 'Novamira\AdrianV2\Abilities\Elementor\Design_Token_Remap', 'register' ) ) {
+	Novamira\AdrianV2\Abilities\Elementor\Design_Token_Remap::register();
+}

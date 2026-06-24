@@ -143,3 +143,9 @@ add_action( 'wp_abilities_api_init', static function () {
     }
 }, 20 );
 
+add_action( 'wp_abilities_api_init', static function () {
+    try {
+        require_once __DIR__ . '/abilities/woocommerce/bootstrap.php';
+    } catch ( \Throwable $e ) {            \Novamira\AdrianV2\Helpers\Diagnostics::record( 'woocommerce', '?', $e );
+    }
+}, 20 );

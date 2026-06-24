@@ -27,6 +27,7 @@ final class V3_To_V4_Converter {
 		'image'       => 'e-image',
 		'icon'        => null,
 		'video'       => null,
+		'youtube'     => null,        // standalone legacy widget; handled specially below
 		'divider'     => 'e-divider',
 		'spacer'      => null,
 	];
@@ -292,6 +293,16 @@ final class V3_To_V4_Converter {
 
 			$new_settings['svg'] = $svg;
 			$atomic = 'e-svg';
+		}
+
+		// ── youtube (standalone legacy widget) → e-youtube ──
+		if ( 'youtube' === $wt ) {
+			$atomic = 'e-youtube';
+			if ( ! empty( $s['url'] ) )        { $new_settings['url']      = $s['url']; }
+			if ( ! empty( $s['autoplay'] ) )   { $new_settings['autoplay'] = (bool) $s['autoplay']; }
+			if ( ! empty( $s['controls'] ) )   { $new_settings['controls'] = (bool) $s['controls']; }
+			if ( ! empty( $s['mute'] ) )       { $new_settings['mute']     = (bool) $s['mute']; }
+			if ( ! empty( $s['loop'] ) )       { $new_settings['loop']     = (bool) $s['loop']; }
 		}
 
 		// ── video → e-youtube / e-self-hosted-video ──
