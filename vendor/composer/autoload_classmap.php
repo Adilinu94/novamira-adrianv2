@@ -56,6 +56,7 @@ return array(
     'Novamira\\AdrianV2\\Abilities\\Elementor\\Remove_Global_Class' => $baseDir . '/includes/abilities/elementor/class-remove-global-class.php',
     'Novamira\\AdrianV2\\Abilities\\Elementor\\Reorder_Element' => $baseDir . '/includes/abilities/elementor/class-reorder-element.php',
     'Novamira\\AdrianV2\\Abilities\\Elementor\\Setup_V4_Foundation' => $baseDir . '/includes/abilities/elementor/class-setup-v4-foundation.php',
+    'Novamira\\AdrianV2\\Abilities\\GlobalClasses\\Create_Global_Class' => \$baseDir . '/includes/abilities/global-classes/class-create-global-class.php',
     'Novamira\\AdrianV2\\Abilities\\GlobalClasses\\Global_Classes' => $baseDir . '/includes/abilities/global-classes/class-global-classes.php',
     'Novamira\\AdrianV2\\Abilities\\Media\\Batch_Media_Upload' => $baseDir . '/includes/abilities/media/class-batch-media-upload.php',
     'Novamira\\AdrianV2\\Abilities\\Media\\Delete_Media' => $baseDir . '/includes/abilities/media/class-delete-media.php',

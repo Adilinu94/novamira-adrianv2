@@ -272,6 +272,7 @@ class ComposerStaticInitd310f329cedd80e44d74a29e0eae8dc0
         'Novamira\\AdrianV2\\Abilities\\Elementor\\Remove_Global_Class' => __DIR__ . '/../..' . '/includes/abilities/elementor/class-remove-global-class.php',
         'Novamira\\AdrianV2\\Abilities\\Elementor\\Reorder_Element' => __DIR__ . '/../..' . '/includes/abilities/elementor/class-reorder-element.php',
         'Novamira\\AdrianV2\\Abilities\\Elementor\\Setup_V4_Foundation' => __DIR__ . '/../..' . '/includes/abilities/elementor/class-setup-v4-foundation.php',
+        'Novamira\\AdrianV2\\Abilities\\GlobalClasses\\Create_Global_Class' => __DIR__ . '/../..' . '/includes/abilities/global-classes/class-create-global-class.php',
         'Novamira\\AdrianV2\\Abilities\\GlobalClasses\\Global_Classes' => __DIR__ . '/../..' . '/includes/abilities/global-classes/class-global-classes.php',
         'Novamira\\AdrianV2\\Abilities\\Media\\Batch_Media_Upload' => __DIR__ . '/../..' . '/includes/abilities/media/class-batch-media-upload.php',
         'Novamira\\AdrianV2\\Abilities\\Media\\Delete_Media' => __DIR__ . '/../..' . '/includes/abilities/media/class-delete-media.php',
