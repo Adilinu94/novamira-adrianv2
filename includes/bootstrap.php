@@ -135,3 +135,11 @@ add_action( 'wp_abilities_api_init', static function () {
     } catch ( \Throwable $e ) {            \Novamira\AdrianV2\Helpers\Diagnostics::record( 'v4-management', '?', $e );
     }
 }, 20 );
+
+add_action( 'wp_abilities_api_init', static function () {
+    try {
+        require_once __DIR__ . '/abilities/clonerlabs/bootstrap.php';
+    } catch ( \Throwable $e ) {            \Novamira\AdrianV2\Helpers\Diagnostics::record( 'clonerlabs', '?', $e );
+    }
+}, 20 );
+
