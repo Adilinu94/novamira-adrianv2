@@ -63,6 +63,7 @@ final class Installer {
         'adrianv2-discover-abilities-protocol' => 'Discover Abilities Protocol',
         'adrianv2-self-audit'                 => 'Self-Audit (Plugin Health)',
         'adrianv2-rollback-build'             => 'Rollback Build',
+        'adrianv2-clonerlabs'              => 'ClonerLabs Import',
     ];
 
     /**
