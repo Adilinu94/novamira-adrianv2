@@ -169,7 +169,7 @@ class Custom_Code {
         wp_register_ability($name, [
             'label'               => __('Add Custom CSS', 'novamira-adrianv2'),
             'description'         => __('Adds custom CSS to a specific element or to the entire page. Requires Elementor Pro. For element-level CSS, use the keyword "selector" as a placeholder for the element\'s CSS wrapper (e.g. "selector .heading { color: red; }" or "selector:hover { transform: scale(1.05); }"). For page-level CSS, omit element_id. Appends to existing CSS by default; set replace=true to overwrite.', 'novamira-adrianv2'),
-            'category'            => 'elementor',
+            'category'            => 'adrianv2-elementor',
             'execute_callback'    => [__CLASS__, 'execute_add_custom_css'],
             'permission_callback' => 'novamira_permission_callback',
             'input_schema'        => [
@@ -297,7 +297,7 @@ class Custom_Code {
         wp_register_ability($name, [
             'label'               => __('Add Custom JavaScript', 'novamira-adrianv2'),
             'description'         => __('Adds a custom JavaScript snippet to a page by inserting an HTML widget containing a <script> tag. Works with free Elementor (no Pro required). The JS code is automatically wrapped in <script> tags — do NOT include them yourself. Use wrap_dom_ready=true to wrap in a DOMContentLoaded listener. For site-wide JS, use add-code-snippet instead (requires Pro).', 'novamira-adrianv2'),
-            'category'            => 'elementor',
+            'category'            => 'adrianv2-elementor',
             'execute_callback'    => [__CLASS__, 'execute_add_custom_js'],
             'permission_callback' => 'novamira_permission_callback',
             'input_schema'        => [
