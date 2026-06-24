@@ -1,5 +1,67 @@
 # Changelog — Novamira AdrianV2
 
+## [1.7.0] — 2026-06-24
+
+### Added
+
+#### 5 neue Kit-Abilities — schließen das offene Versprechen von `import-template-kit`
+
+| Ability | Klasse | Beschreibung |
+|---|---|---|
+| `novamira-adrianv2/rollback-kit-import` | `Kit_Rollback` | Rollback einer Kit-Import-Session via Snapshot-ID; löscht erstellte Posts, restauriert WP-Settings, deaktiviert Plugins |
+| `novamira-adrianv2/list-kit-snapshots` | `Kit_Rollback` | Listet alle verfügbaren Rollback-Snapshots (neueste zuerst) |
+| `novamira-adrianv2/check-editor-health` | `Kit_Editor_Health` | 4 read-only Readiness-Checks: REST API, admin-ajax, checklist.js Null-Deref-Bug, HFE CSS-Pfade |
+| `novamira-adrianv2/import-kit-plugins` | `Kit_Plugin_Installer` | Prüft, installiert (wordpress.org) und aktiviert Plugins aus dem Kit-Manifest; dry-run default |
+| `novamira-adrianv2/import-kit-media` | `Kit_Media_Handler` | Lädt Kit-Medien in die WP Media Library und schreibt URLs in `_elementor_data` um |
+| `novamira-adrianv2/import-kit-fonts` | `Kit_Font_Localizer` | Google Fonts lokal hosten (DSGVO-konform), `@font-face` CSS als WP-Option gespeichert |
+
+- `bootstrap.php` registriert jetzt alle 8 Kit-Ability-Klassen (vorher nur 2).
+- `Kit_Manifest::from_json()` statische Factory-Methode hinzugefügt (Shorthand für `new Kit_Manifest($json)`).
+
+#### `novamira-adrianv2/export-kit` — neues Feature, größter Nutzwert
+
+- Neue Klasse `Kit_Exporter` → Ability `novamira-adrianv2/export-kit`.
+- Exportiert die aktuelle WordPress-Site als wiederverwendbares **Novamira Enhanced Kit Manifest JSON** — direktes Gegenstück zu `import-template-kit`.
+- **Was wird exportiert:**
+  - Alle Elementor-editierten Posts/Pages (`_elementor_data` + Metadaten)
+  - Elementor Kit Globals (Design-Tokens: Farben, Typografie aus `page_settings`)
+  - WP-Site-Settings (`blogname`, `permalink_structure`, `page_on_front` als Template-Ref)
+  - Aktive Nav-Menus mit Item-Targets (`page:ref`, `url:href`, `home`, `category:slug`)
+  - Plugin-Anforderungen (aktive Plugins ohne Core-Elementor)
+  - Media-File-Referenzen (aus `_elementor_data` extrahierte Upload-URLs)
+  - Google-Fonts-Familiennamen (aus Typography-Settings)
+  - Aktiver Theme-Slug
+- Parameter: `kit_name`, `kit_version`, `post_ids` (Filter), `include_menus/plugins/media`, `save_as_option`
+- Output: `{ success, manifest (JSON-String), summary, warnings }`
+
+#### V3→V4 Converter: `icon-box` und `image-box`
+
+- `icon-box` und `image-box` zu `WIDGET_MAP` hinzugefügt (Wert `null`).
+- Beide Widgets werden mit **`kept_v3` + Warn-Message** behandelt (statt `unsupported_widgets`).
+- Strategie `skip` korrekt unterstützt: beide werden dann aus dem Baum entfernt.
+- Warn-Message enthält Migrationsempfehlung (`e-svg + e-heading + e-paragraph` bzw. `e-image + e-heading + e-paragraph`).
+
+#### Tests: 165 → 203 (+38 neue Tests)
+
+**Neue Testdatei `KitHelpersTest.php`** — 36 Unit-Tests für pure-PHP-Logik ohne WP-DB-Abhängigkeit:
+- `Kit_Menu_Builder::resolve_target()` — 10 Tests (alle Präfix-Varianten: `url:`, `home`, `page:`, `category:`, unbekannt, leer)
+- `Kit_Plugin_Installer::find_plugin_file()` — 8 Tests (exact match, directory fallback, not found, no partial match, hyphens)
+- `Kit_Rollback` Ring-Buffer — 18 Tests (create/list/record/delete snapshots, MAX_SNAPSHOTS-Cap, Cleanup, Isolation)
+
+**`V3ToV4ConverterTest.php`** — 6 neue Tests:
+- `icon-box` → kept_v3 mit Warning (keep strategy)
+- `icon-box` → skip (skip strategy)
+- `image-box` → kept_v3 mit Warning (keep strategy)
+- `image-box` → skip (skip strategy)
+- `WIDGET_MAP` enthält jetzt `icon-box` und `image-box`
+
+**Test-Bootstrap:**
+- Lädt `Kit_Page_Creator`, `Kit_Menu_Builder`, `Kit_Rollback`, `Kit_Plugin_Installer`
+- Neue WP-Stubs: `get_option`, `update_option`, `home_url`, `get_permalink`, `get_term_by`, `get_term_link`, `get_theme_mod`, `set_theme_mod`, `switch_theme`, `flush_rewrite_rules`, `wp_delete_post`, `wp_delete_nav_menu`, `deactivate_plugins`
+- `$wpdb` In-Memory-Stub für `Kit_Page_Creator::resolve_template_ref()`
+
+---
+
 ## [1.6.0] — 2026-06-23
 
 ### Added

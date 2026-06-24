@@ -236,4 +236,129 @@ class Kit_Rollback {
 		$filtered = array_filter( $all, fn( $s ) => ( $s['id'] ?? '' ) !== $snapshot_id );
 		update_option( self::OPTION_KEY, array_values( $filtered ) );
 	}
+
+	// -------------------------------------------------------------------------
+	// MCP Ability registration
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Register the rollback-kit-import MCP ability.
+	 *
+	 * @since 1.7.0
+	 */
+	public static function register(): void {
+		wp_register_ability(
+			'novamira-adrianv2/rollback-kit-import',
+			[
+				'label'       => 'Rollback Kit Import',
+				'description' => 'Undo a previous Template Kit import using its snapshot ID. Deletes all posts/pages created during that import, restores WP site settings (blogname, front page, permalink structure, theme, nav menus), and deactivates auto-installed plugins. Obtain snapshot IDs from the rollback_snapshot_id field of import-template-kit or from list-kit-snapshots.',
+				'category'    => 'novamira-adrianv2',
+				'input_schema' => [
+					'type'       => 'object',
+					'required'   => [ 'snapshot_id' ],
+					'properties' => [
+						'snapshot_id' => [
+							'type'        => 'string',
+							'description' => 'Snapshot ID returned by import-template-kit (e.g. "kit_20260621_1542_a3b4").',
+						],
+					],
+				],
+				'output_schema' => [
+					'type'       => 'object',
+					'properties' => [
+						'success' => [ 'type' => 'boolean' ],
+						'actions' => [ 'type' => 'array', 'items' => [ 'type' => 'string' ] ],
+						'error'   => [ 'type' => 'string' ],
+					],
+				],
+				'execute_callback'    => [ self::class, 'execute' ],
+				'permission_callback' => 'novamira_permission_callback',
+				'meta'                => [
+					'show_in_rest' => true,
+					'mcp'          => [ 'public' => true ],
+					'annotations'  => [
+						'readonly'    => false,
+						'destructive' => true,
+					],
+				],
+			]
+		);
+
+		wp_register_ability(
+			'novamira-adrianv2/list-kit-snapshots',
+			[
+				'label'       => 'List Kit Import Snapshots',
+				'description' => 'Return a list of available rollback snapshots (newest first). Each entry contains snapshot_id, kit_name, timestamp, and counts of posts/menus/plugins recorded.',
+				'category'    => 'novamira-adrianv2',
+				'input_schema' => [
+					'type'       => 'object',
+					'properties' => [
+						'limit' => [
+							'type'        => 'integer',
+							'default'     => 10,
+							'description' => 'Maximum number of snapshots to return (1–10).',
+						],
+					],
+				],
+				'output_schema' => [
+					'type'       => 'object',
+					'properties' => [
+						'snapshots' => [ 'type' => 'array' ],
+						'total'     => [ 'type' => 'integer' ],
+					],
+				],
+				'execute_callback'    => [ self::class, 'execute_list' ],
+				'permission_callback' => 'novamira_permission_callback',
+				'meta'                => [
+					'show_in_rest' => true,
+					'mcp'          => [ 'public' => true ],
+					'annotations'  => [
+						'readonly'    => true,
+						'destructive' => false,
+					],
+				],
+			]
+		);
+	}
+
+	/**
+	 * Execute rollback-kit-import.
+	 *
+	 * @param array|null $input
+	 * @return array
+	 */
+	public static function execute( ?array $input ): array {
+		$snapshot_id = trim( (string) ( $input['snapshot_id'] ?? '' ) );
+
+		if ( $snapshot_id === '' ) {
+			return [ 'success' => false, 'error' => 'snapshot_id is required.' ];
+		}
+
+		return self::rollback( $snapshot_id );
+	}
+
+	/**
+	 * Execute list-kit-snapshots.
+	 *
+	 * @param array|null $input
+	 * @return array
+	 */
+	public static function execute_list( ?array $input ): array {
+		$limit = max( 1, min( 10, (int) ( $input['limit'] ?? 10 ) ) );
+		$snapshots = self::list_snapshots( $limit );
+
+		// Summarise each snapshot for safe transmission (exclude full pre-state dump).
+		$summary = array_map( function ( array $s ): array {
+			return [
+				'snapshot_id'       => $s['id'] ?? '',
+				'kit_name'          => $s['kit_name'] ?? '',
+				'timestamp'         => $s['timestamp'] ?? '',
+				'posts_count'       => count( $s['posts_created'] ?? [] ),
+				'menus_count'       => count( $s['menus_created'] ?? [] ),
+				'plugins_count'     => count( $s['plugins_installed'] ?? [] ),
+			];
+		}, $snapshots );
+
+		return [ 'snapshots' => $summary, 'total' => count( $summary ) ];
+	}
 }

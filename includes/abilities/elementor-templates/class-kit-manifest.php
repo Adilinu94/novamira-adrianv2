@@ -59,6 +59,17 @@ class Kit_Manifest {
 		}
 	}
 
+	/**
+	 * Static factory — shorthand for new Kit_Manifest( $json ).
+	 *
+	 * @param string $manifest_json   Kit manifest JSON string.
+	 * @param array  $template_contents  Optional Elementor kit template contents.
+	 * @return static
+	 */
+	public static function from_json( string $manifest_json, array $template_contents = [] ): static {
+		return new static( $manifest_json, $template_contents );
+	}
+
 	// -------------------------------------------------------------------------
 	// Identity
 	// -------------------------------------------------------------------------

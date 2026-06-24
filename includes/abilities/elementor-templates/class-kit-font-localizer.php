@@ -162,4 +162,82 @@ class Kit_Font_Localizer {
 			'bytes'       => $total_bytes,
 		];
 	}
+
+	// -------------------------------------------------------------------------
+	// MCP Ability registration
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Register the import-kit-fonts MCP ability.
+	 *
+	 * @since 1.7.0
+	 */
+	public static function register(): void {
+		wp_register_ability(
+			'novamira-adrianv2/import-kit-fonts',
+			[
+				'label'       => 'Import Kit Fonts (DSGVO-local)',
+				'description' => 'Download Google Fonts declared in the kit manifest and serve them from /wp-content/fonts/ (DSGVO-compliant). Generates @font-face CSS saved as WP option _novamira_kit_fonts_css_{session_id}. Fonts that fail to download fall back to the original Google URL with a warning. Dry-run mode plans the download without writing files.',
+				'category'    => 'novamira-adrianv2',
+				'input_schema' => [
+					'type'       => 'object',
+					'required'   => [ 'manifest' ],
+					'properties' => [
+						'manifest' => [
+							'type'        => 'string',
+							'description' => 'Kit manifest JSON.',
+						],
+						'session_id' => [
+							'type'        => 'string',
+							'default'     => '',
+							'description' => 'Import session ID used as WP option suffix for the generated CSS.',
+						],
+						'dry_run' => [
+							'type'        => 'boolean',
+							'default'     => false,
+							'description' => 'Plan without downloading files.',
+						],
+					],
+				],
+				'output_schema' => [
+					'type'       => 'object',
+					'properties' => [
+						'localized'      => [ 'type' => 'array' ],
+						'failed'         => [ 'type' => 'array' ],
+						'css_option_key' => [ 'type' => 'string' ],
+						'total_size_kb'  => [ 'type' => 'integer' ],
+					],
+				],
+				'execute_callback'    => [ self::class, 'execute' ],
+				'permission_callback' => 'novamira_permission_callback',
+				'meta'                => [
+					'show_in_rest' => true,
+					'mcp'          => [ 'public' => true ],
+					'annotations'  => [
+						'readonly'    => false,
+						'destructive' => false,
+					],
+				],
+			]
+		);
+	}
+
+	/**
+	 * Execute import-kit-fonts.
+	 *
+	 * @param array|null $input
+	 * @return array
+	 */
+	public static function execute( ?array $input ): array {
+		$manifest_json = $input['manifest'] ?? '';
+		$session_id    = trim( (string) ( $input['session_id'] ?? '' ) );
+		$dry_run       = (bool) ( $input['dry_run'] ?? false );
+
+		if ( empty( $manifest_json ) ) {
+			return [ 'error' => 'manifest is required.' ];
+		}
+
+		$manifest = Kit_Manifest::from_json( $manifest_json );
+		return self::localize_all( $manifest, $session_id, $dry_run );
+	}
 }

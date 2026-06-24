@@ -92,4 +92,73 @@ class Kit_Editor_Health {
 		// Broken only if the rewrite filter is not active.
 		return has_filter( 'plugins_url', [ Kit_Self_Heal::class, 'rewrite_pro_css_url' ] ) !== false;
 	}
+
+	// -------------------------------------------------------------------------
+	// MCP Ability registration
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Register the check-editor-health MCP ability.
+	 *
+	 * @since 1.7.0
+	 */
+	public static function register(): void {
+		wp_register_ability(
+			'novamira-adrianv2/check-editor-health',
+			[
+				'label'       => 'Check Editor Health',
+				'description' => 'Run 4 read-only readiness checks for the Elementor editor after a kit import: REST API reachability, admin-ajax availability, checklist.js null-deref bug detection, and HFE CSS path resolution. Returns a map of check names to boolean pass/fail. All checks are non-destructive.',
+				'category'    => 'novamira-adrianv2',
+				'input_schema' => [
+					'type'       => 'object',
+					'required'   => [ 'post_id' ],
+					'properties' => [
+						'post_id' => [
+							'type'        => 'integer',
+							'description' => 'ID of any Elementor-edited post to use for REST endpoint probing.',
+						],
+					],
+				],
+				'output_schema' => [
+					'type'       => 'object',
+					'properties' => [
+						'rest_api'  => [ 'type' => 'boolean', 'description' => 'Elementor REST panel endpoint returns 200/401/403.' ],
+						'ajax'      => [ 'type' => 'boolean', 'description' => 'admin-ajax.php is reachable (returns 400 = expected for empty request).' ],
+						'checklist' => [ 'type' => 'boolean', 'description' => 'No checklist.js null-deref bug detected.' ],
+						'hfe_css'   => [ 'type' => 'boolean', 'description' => 'HFE CSS paths resolve correctly.' ],
+						'all_pass'  => [ 'type' => 'boolean', 'description' => 'True if all 4 checks passed.' ],
+					],
+				],
+				'execute_callback'    => [ self::class, 'execute' ],
+				'permission_callback' => 'novamira_permission_callback',
+				'meta'                => [
+					'show_in_rest' => true,
+					'mcp'          => [ 'public' => true ],
+					'annotations'  => [
+						'readonly'    => true,
+						'destructive' => false,
+					],
+				],
+			]
+		);
+	}
+
+	/**
+	 * Execute check-editor-health.
+	 *
+	 * @param array|null $input
+	 * @return array
+	 */
+	public static function execute( ?array $input ): array {
+		$post_id = (int) ( $input['post_id'] ?? 0 );
+
+		if ( $post_id <= 0 ) {
+			return [ 'error' => 'post_id must be a positive integer.' ];
+		}
+
+		$results  = self::check_editor( $post_id );
+		$all_pass = ! in_array( false, $results, true );
+
+		return array_merge( $results, [ 'all_pass' => $all_pass ] );
+	}
 }

@@ -30,6 +30,8 @@ final class V3_To_V4_Converter {
 		'youtube'     => null,        // standalone legacy widget; handled specially below
 		'divider'     => 'e-divider',
 		'spacer'      => null,
+		'icon-box'    => null,        // kept_v3 with descriptive warning
+		'image-box'   => null,        // kept_v3 with descriptive warning
 	];
 
 	/**
@@ -293,6 +295,32 @@ final class V3_To_V4_Converter {
 
 			$new_settings['svg'] = $svg;
 			$atomic = 'e-svg';
+		}
+
+		// ── icon-box → kept_v3 or skip (no V4 Atomic equivalent yet) ──
+		if ( 'icon-box' === $wt ) {
+			if ( 'skip' === $strategy ) {
+				$stats['skipped']++;
+				$stats['converted']--;
+				return null;
+			}
+			$warnings[] = "Widget 'icon-box' has no V4 Atomic equivalent — keeping as V3. Consider splitting into an e-svg + e-heading + e-paragraph container.";
+			$stats['kept_v3']++;
+			$stats['converted']--;
+			return $el;
+		}
+
+		// ── image-box → kept_v3 or skip (no V4 Atomic equivalent yet) ──
+		if ( 'image-box' === $wt ) {
+			if ( 'skip' === $strategy ) {
+				$stats['skipped']++;
+				$stats['converted']--;
+				return null;
+			}
+			$warnings[] = "Widget 'image-box' has no V4 Atomic equivalent — keeping as V3. Consider splitting into an e-image + e-heading + e-paragraph container.";
+			$stats['kept_v3']++;
+			$stats['converted']--;
+			return $el;
 		}
 
 		// ── youtube (standalone legacy widget) → e-youtube ──

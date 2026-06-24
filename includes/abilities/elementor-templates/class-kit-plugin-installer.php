@@ -280,4 +280,99 @@ class Kit_Plugin_Installer {
 			require_once ABSPATH . 'wp-admin/includes/class-plugin-upgrader.php';
 		}
 	}
+
+	// -------------------------------------------------------------------------
+	// MCP Ability registration
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Register the import-kit-plugins MCP ability.
+	 *
+	 * @since 1.7.0
+	 */
+	public static function register(): void {
+		wp_register_ability(
+			'novamira-adrianv2/import-kit-plugins',
+			[
+				'label'       => 'Install / Activate Kit Plugins',
+				'description' => 'Check, install (from WordPress.org), and activate all plugins required by a Template Kit. Premium / non-wordpress.org plugins are reported as "not_found" without installation. Returns status buckets: ready, needs_install, needs_activate, too_old, not_found. Dry-run mode (default: true) plans without installing.',
+				'category'    => 'novamira-adrianv2',
+				'input_schema' => [
+					'type'       => 'object',
+					'required'   => [ 'manifest' ],
+					'properties' => [
+						'manifest' => [
+							'type'        => 'string',
+							'description' => 'Kit manifest JSON — the same manifest passed to import-template-kit.',
+						],
+						'dry_run' => [
+							'type'        => 'boolean',
+							'default'     => true,
+							'description' => 'When true, check only — no installation. Default: true.',
+						],
+						'snapshot_id' => [
+							'type'        => 'string',
+							'description' => 'Optional: rollback snapshot ID to record installed plugins for potential rollback.',
+						],
+					],
+				],
+				'output_schema' => [
+					'type'       => 'object',
+					'properties' => [
+						'dry_run'        => [ 'type' => 'boolean' ],
+						'ready'          => [ 'type' => 'array' ],
+						'needs_install'  => [ 'type' => 'array' ],
+						'needs_activate' => [ 'type' => 'array' ],
+						'too_old'        => [ 'type' => 'array' ],
+						'not_found'      => [ 'type' => 'array' ],
+						'installed'      => [ 'type' => 'array' ],
+						'errors'         => [ 'type' => 'array' ],
+					],
+				],
+				'execute_callback'    => [ self::class, 'execute' ],
+				'permission_callback' => 'novamira_permission_callback',
+				'meta'                => [
+					'show_in_rest' => true,
+					'mcp'          => [ 'public' => true ],
+					'annotations'  => [
+						'readonly'    => false,
+						'destructive' => false,
+					],
+				],
+			]
+		);
+	}
+
+	/**
+	 * Execute import-kit-plugins.
+	 *
+	 * @param array|null $input
+	 * @return array
+	 */
+	public static function execute( ?array $input ): array {
+		$manifest_json = $input['manifest'] ?? '';
+		$dry_run       = (bool) ( $input['dry_run'] ?? true );
+		$snapshot_id   = trim( (string) ( $input['snapshot_id'] ?? '' ) );
+
+		if ( empty( $manifest_json ) ) {
+			return [ 'error' => 'manifest is required.' ];
+		}
+
+		$manifest = Kit_Manifest::from_json( $manifest_json );
+		$required = $manifest->get_required_plugins();
+
+		if ( $dry_run ) {
+			$check = self::check( $required );
+			return array_merge( [ 'dry_run' => true ], $check );
+		}
+
+		$result = self::install_all( $required, false );
+
+		// Record installed plugins into rollback snapshot if provided.
+		if ( $snapshot_id !== '' && ! empty( $result['installed'] ) ) {
+			Kit_Rollback::record_plugins( $snapshot_id, $result['installed'] );
+		}
+
+		return array_merge( [ 'dry_run' => false ], $result );
+	}
 }

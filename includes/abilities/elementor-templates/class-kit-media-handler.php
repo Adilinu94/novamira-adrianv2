@@ -219,4 +219,97 @@ class Kit_Media_Handler {
 		$relative = substr( $parsed['path'], $uploads_pos + strlen( '/wp-content/uploads/' ) );
 		return trailingslashit( wp_upload_dir()['baseurl'] ) . $relative;
 	}
+
+	// -------------------------------------------------------------------------
+	// MCP Ability registration
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Register the import-kit-media MCP ability.
+	 *
+	 * @since 1.7.0
+	 */
+	public static function register(): void {
+		wp_register_ability(
+			'novamira-adrianv2/import-kit-media',
+			[
+				'label'       => 'Import Kit Media',
+				'description' => 'Download all media assets from a Template Kit manifest into the WP media library and rewrite source URLs in _elementor_data for a set of post IDs. Strategies: "download" (default) — fetch & sideload; "url_reference" — rewrite paths without downloading; "skip" — no-op. Dry-run returns what would be downloaded.',
+				'category'    => 'novamira-adrianv2',
+				'input_schema' => [
+					'type'       => 'object',
+					'required'   => [ 'manifest', 'id_map' ],
+					'properties' => [
+						'manifest' => [
+							'type'        => 'string',
+							'description' => 'Kit manifest JSON.',
+						],
+						'id_map' => [
+							'type'        => 'object',
+							'description' => 'Map of { template_ref => post_id } — returned by import-template-kit.',
+						],
+						'strategy' => [
+							'type'        => 'string',
+							'enum'        => [ 'download', 'url_reference', 'skip' ],
+							'default'     => 'download',
+							'description' => 'Media handling strategy.',
+						],
+						'dry_run' => [
+							'type'        => 'boolean',
+							'default'     => false,
+							'description' => 'Plan without downloading or rewriting.',
+						],
+					],
+				],
+				'output_schema' => [
+					'type'       => 'object',
+					'properties' => [
+						'downloaded' => [ 'type' => 'integer' ],
+						'skipped'    => [ 'type' => 'integer' ],
+						'errors'     => [ 'type' => 'array' ],
+						'url_map'    => [ 'type' => 'object' ],
+					],
+				],
+				'execute_callback'    => [ self::class, 'execute' ],
+				'permission_callback' => 'novamira_permission_callback',
+				'meta'                => [
+					'show_in_rest' => true,
+					'mcp'          => [ 'public' => true ],
+					'annotations'  => [
+						'readonly'    => false,
+						'destructive' => false,
+					],
+				],
+			]
+		);
+	}
+
+	/**
+	 * Execute import-kit-media.
+	 *
+	 * @param array|null $input
+	 * @return array
+	 */
+	public static function execute( ?array $input ): array {
+		$manifest_json = $input['manifest'] ?? '';
+		$id_map        = $input['id_map'] ?? [];
+		$strategy      = $input['strategy'] ?? 'download';
+		$dry_run       = (bool) ( $input['dry_run'] ?? false );
+
+		if ( empty( $manifest_json ) ) {
+			return [ 'error' => 'manifest is required.' ];
+		}
+		if ( ! is_array( $id_map ) || empty( $id_map ) ) {
+			return [ 'error' => 'id_map must be a non-empty object mapping template_ref to post_id.' ];
+		}
+		if ( ! in_array( $strategy, [ 'download', 'url_reference', 'skip' ], true ) ) {
+			$strategy = 'download';
+		}
+
+		// Cast id_map values to int.
+		$id_map_int = array_map( 'intval', $id_map );
+
+		$manifest = Kit_Manifest::from_json( $manifest_json );
+		return self::process( $manifest, $id_map_int, $strategy, $dry_run );
+	}
 }

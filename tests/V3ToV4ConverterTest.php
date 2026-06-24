@@ -864,12 +864,119 @@ final class V3ToV4ConverterTest extends TestCase
 
     public function test_widget_map_contains_expected_keys(): void
     {
-        $expected = ['heading', 'text-editor', 'button', 'image', 'icon', 'video', 'divider', 'spacer'];
+        $expected = ['heading', 'text-editor', 'button', 'image', 'icon', 'video', 'divider', 'spacer', 'icon-box', 'image-box'];
         $actual   = array_keys( V3_To_V4_Converter::WIDGET_MAP );
 
         foreach ( $expected as $key ) {
             $this->assertContainsEquals( $key, $actual, "WIDGET_MAP should contain '$key'" );
         }
+    }
+
+    // -----------------------------------------------------------------
+    // icon-box → kept_v3 with descriptive warning
+    // -----------------------------------------------------------------
+
+    public function test_icon_box_kept_as_v3_with_warning(): void
+    {
+        $el = [
+            'id'         => 'ib1',
+            'elType'     => 'widget',
+            'widgetType' => 'icon-box',
+            'settings'   => [
+                'title'       => 'Feature',
+                'description' => 'A great feature.',
+            ],
+            'elements'   => [],
+        ];
+
+        $stats    = [];
+        $warnings = [];
+
+        $result = V3_To_V4_Converter::convert_elements( [ $el ], 'keep', $stats, $warnings );
+
+        // Element kept as-is (V3).
+        $this->assertCount( 1, $result );
+        $this->assertSame( 'icon-box', $result[0]['widgetType'] );
+
+        // Warning must mention icon-box and suggest alternative.
+        $this->assertNotEmpty( $warnings );
+        $this->assertStringContainsString( 'icon-box', $warnings[0] );
+        $this->assertStringContainsString( 'V3', $warnings[0] );
+
+        // Stats.
+        $this->assertSame( 1, $stats['kept_v3'] ?? 0 );
+        $this->assertSame( 0, $stats['converted'] ?? 0 );
+    }
+
+    public function test_icon_box_skipped_when_strategy_skip(): void
+    {
+        $el = [
+            'id'         => 'ib2',
+            'elType'     => 'widget',
+            'widgetType' => 'icon-box',
+            'settings'   => [],
+            'elements'   => [],
+        ];
+
+        $stats    = [];
+        $warnings = [];
+
+        $result = V3_To_V4_Converter::convert_elements( [ $el ], 'skip', $stats, $warnings );
+
+        $this->assertCount( 0, $result );
+        $this->assertSame( 0, $stats['kept_v3'] ?? 0 );
+        $this->assertSame( 1, $stats['skipped'] ?? 0 );
+    }
+
+    // -----------------------------------------------------------------
+    // image-box → kept_v3 with descriptive warning
+    // -----------------------------------------------------------------
+
+    public function test_image_box_kept_as_v3_with_warning(): void
+    {
+        $el = [
+            'id'         => 'imgb1',
+            'elType'     => 'widget',
+            'widgetType' => 'image-box',
+            'settings'   => [
+                'image' => [ 'url' => 'https://example.com/img.jpg', 'id' => 42 ],
+                'title' => 'About Us',
+            ],
+            'elements'   => [],
+        ];
+
+        $stats    = [];
+        $warnings = [];
+
+        $result = V3_To_V4_Converter::convert_elements( [ $el ], 'keep', $stats, $warnings );
+
+        $this->assertCount( 1, $result );
+        $this->assertSame( 'image-box', $result[0]['widgetType'] );
+
+        $this->assertNotEmpty( $warnings );
+        $this->assertStringContainsString( 'image-box', $warnings[0] );
+        $this->assertStringContainsString( 'V3', $warnings[0] );
+
+        $this->assertSame( 1, $stats['kept_v3'] ?? 0 );
+    }
+
+    public function test_image_box_skipped_when_strategy_skip(): void
+    {
+        $el = [
+            'id'         => 'imgb2',
+            'elType'     => 'widget',
+            'widgetType' => 'image-box',
+            'settings'   => [],
+            'elements'   => [],
+        ];
+
+        $stats    = [];
+        $warnings = [];
+
+        $result = V3_To_V4_Converter::convert_elements( [ $el ], 'skip', $stats, $warnings );
+
+        $this->assertCount( 0, $result );
+        $this->assertSame( 1, $stats['skipped'] ?? 0 );
     }
 
     // -----------------------------------------------------------------

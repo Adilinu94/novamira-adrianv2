@@ -20,6 +20,7 @@ $files = [
     __DIR__ . '/class-kit-self-heal.php',
     __DIR__ . '/class-editor-health-check.php',
     __DIR__ . '/class-import-template-kit.php',
+    __DIR__ . '/class-kit-exporter.php',
 ];
 foreach ($files as $f) {
     if (file_exists($f)) require_once $f;
@@ -28,6 +29,11 @@ foreach ($files as $f) {
 $abilities = [
     'Novamira\AdrianV2\Abilities\ElementorTemplates\Template_Manager',
     'Novamira\AdrianV2\Abilities\ElementorTemplates\Import_Template_Kit',
+    'Novamira\AdrianV2\Abilities\ElementorTemplates\Kit_Rollback',
+    'Novamira\AdrianV2\Abilities\ElementorTemplates\Kit_Editor_Health',
+    'Novamira\AdrianV2\Abilities\ElementorTemplates\Kit_Plugin_Installer',
+    'Novamira\AdrianV2\Abilities\ElementorTemplates\Kit_Media_Handler',
+    'Novamira\AdrianV2\Abilities\ElementorTemplates\Kit_Font_Localizer',
 ];
 foreach ($abilities as $class) {
     if (class_exists($class) && method_exists($class, 'register')) {
