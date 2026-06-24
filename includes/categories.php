@@ -135,6 +135,11 @@ add_action(
 				'description' => __( 'Misc utilities (smoke tests, hello-world probes).', 'novamira-adrianv2' ),
 				'meta'        => array( 'elementor_version' => 'mixed' ),
 			),
+			'adrianv2-clonerlabs'     => array(
+				'label'       => __( 'AdrianV2 — ClonerLabs Import', 'novamira-adrianv2' ),
+				'description' => __( 'Import ClonerLabs JSON exports into Elementor: full-page exports, saved sections, and batch imports. Handles media sideloading, global style merging, V3→V4 conversion, style cleanup, and GSAP script preservation.', 'novamira-adrianv2' ),
+				'meta'        => array( 'elementor_version' => 'mixed' ),
+			),
 		// adrianv2-live-edit registered above to keep related live-edit entries grouped.
 		);
 		foreach ( $categories as $slug => $args ) {
@@ -142,3 +147,4 @@ add_action(
 		}
 	}
 );
+
