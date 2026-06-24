@@ -283,7 +283,7 @@ class Atomic_Layouts {
                 'Adds an Elementor 4.0 flexbox container. Layout (direction, justify, align, gap, wrap) and visual styles (padding, background-color, color, min-height, width, border-radius) are applied as local V4 styles automatically — not as v3 container settings. Use this instead of legacy containers for Elementor 4.0+ sites.',
                 'novamira-adrianv2'
             ),
-            'category'            => 'elementor',
+            'category'            => 'adrianv2-elementor',
             'execute_callback'    => [self::class, 'execute_add_flexbox'],
             'permission_callback' => 'novamira_permission_callback',
             'input_schema'        => [
@@ -362,7 +362,7 @@ class Atomic_Layouts {
         wp_register_ability($name, [
             'label'               => __('Add Div Block', 'novamira-adrianv2'),
             'description'         => __('Adds an Elementor 4.0 div-block container (block flow layout). Visual styles (padding, background-color, color, min-height, width, border-radius) are applied as local V4 styles automatically. Use for non-flex containers.', 'novamira-adrianv2'),
-            'category'            => 'elementor',
+            'category'            => 'adrianv2-elementor',
             'execute_callback'    => [self::class, 'execute_add_div_block'],
             'permission_callback' => 'novamira_permission_callback',
             'input_schema'        => [
@@ -430,7 +430,7 @@ class Atomic_Layouts {
         wp_register_ability($name, [
             'label'               => __('Detect Elementor Version', 'novamira-adrianv2'),
             'description'         => __('Returns site-level Elementor V4/atomic capabilities and, when post_id is provided, the detected page version. Call this first to decide whether to use legacy tools, atomic tools, or V3-to-V4 conversion.', 'novamira-adrianv2'),
-            'category'            => 'elementor',
+            'category'            => 'adrianv2-elementor',
             'execute_callback'    => static function ($input = null) {
                 $input        = is_array($input) ? $input : [];
                 $post_id      = absint($input['post_id'] ?? 0);
