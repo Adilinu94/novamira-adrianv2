@@ -154,3 +154,11 @@ if ( class_exists( 'Novamira\AdrianV2\Abilities\Elementor\Design_Token_Remap' ) 
 if ( class_exists( 'Novamira\AdrianV2\Abilities\Elementor\Design_Token_Remap' ) && method_exists( 'Novamira\AdrianV2\Abilities\Elementor\Design_Token_Remap', 'register' ) ) {
 	Novamira\AdrianV2\Abilities\Elementor\Design_Token_Remap::register();
 }
+require_once __DIR__ . '/class-fix-orphan-styles.php';
+if ( class_exists( 'Novamira\AdrianV2\Abilities\Elementor\Fix_Orphan_Styles' ) && method_exists( 'Novamira\AdrianV2\Abilities\Elementor\Fix_Orphan_Styles', 'register' ) ) {
+	Novamira\AdrianV2\Abilities\Elementor\Fix_Orphan_Styles::register();
+}
+require_once __DIR__ . '/class-list-v3-pages.php';
+if ( class_exists( 'Novamira\AdrianV2\Abilities\Elementor\List_V3_Pages' ) && method_exists( 'Novamira\AdrianV2\Abilities\Elementor\List_V3_Pages', 'register' ) ) {
+	Novamira\AdrianV2\Abilities\Elementor\List_V3_Pages::register();
+}

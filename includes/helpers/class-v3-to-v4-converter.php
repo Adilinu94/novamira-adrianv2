@@ -1177,6 +1177,61 @@ final class V3_To_V4_Converter {
 	}
 
 	/**
+	 * Return a map of typography preset _id → array of typography properties.
+	 *
+	 * @return array<string, array>  e.g. { "primary" => {"typography_font_family":"Roboto",...} }
+	 */
+	private static function get_kit_global_typography(): array {
+		static $typo = null;
+
+		if ( null !== $typo ) {
+			return $typo;
+		}
+
+		$typo = array();
+
+		try {
+			$kit_id = get_option( 'elementor_active_kit' );
+			if ( empty( $kit_id ) ) {
+				return $typo;
+			}
+
+			$kit_settings = get_post_meta( (int) $kit_id, '_elementor_page_settings', true );
+			if ( ! is_array( $kit_settings ) ) {
+				return $typo;
+			}
+
+			// Merge system_typography + custom_typography.
+			foreach ( array( 'system_typography', 'custom_typography' ) as $key ) {
+				$entries = $kit_settings[ $key ] ?? array();
+				if ( ! is_array( $entries ) ) {
+					continue;
+				}
+				foreach ( $entries as $entry ) {
+					$id = $entry['_id'] ?? '';
+					if ( '' === $id ) {
+						continue;
+					}
+					// Collect all typography_* properties from this preset entry.
+					$props = array();
+					foreach ( $entry as $prop_key => $prop_val ) {
+						if ( str_starts_with( $prop_key, 'typography_' ) ) {
+							$props[ $prop_key ] = $prop_val;
+						}
+					}
+					if ( ! empty( $props ) ) {
+						$typo[ $id ] = $props;
+					}
+				}
+			}
+		} catch ( \Exception $e ) {
+			// Best-effort — silently ignore.
+		}
+
+		return $typo;
+	}
+
+	/**
 	 * Resolve V3 __globals__ references in widget/container settings.
 	 *
 	 * For each key in __globals__ that points to a global color ID
@@ -1198,36 +1253,40 @@ final class V3_To_V4_Converter {
 		}
 
 		$kit_colors = self::get_kit_global_colors();
-		if ( empty( $kit_colors ) ) {
-			return;
-		}
 
 		foreach ( $globals as $setting_key => $global_ref ) {
 			if ( ! is_string( $global_ref ) ) {
 				continue;
 			}
 
-			// Only handle color globals (globals/colors?id=XXXXX).
-			// Skip typography globals (globals/typography?id=XXXXX) for now.
-			if ( ! str_starts_with( $global_ref, 'globals/colors?id=' ) ) {
+			// ── Color globals ────────────────────────────────────────────────
+			if ( str_starts_with( $global_ref, 'globals/colors?id=' ) ) {
+				$color_id = substr( $global_ref, strlen( 'globals/colors?id=' ) );
+				if ( '' !== $color_id && isset( $kit_colors[ $color_id ] ) ) {
+					// Overwrite inline setting with resolved hex value so it flows
+					// through resolve_color_var() into a V4 global-color-variable.
+					$settings[ $setting_key ] = $kit_colors[ $color_id ];
+				}
 				continue;
 			}
 
-			$color_id = substr( $global_ref, strlen( 'globals/colors?id=' ) );
-			if ( '' === $color_id ) {
+			// ── Typography globals ────────────────────────────────────────────
+			if ( str_starts_with( $global_ref, 'globals/typography?id=' ) ) {
+				$typo_id = substr( $global_ref, strlen( 'globals/typography?id=' ) );
+				$kit_typo = self::get_kit_global_typography();
+				if ( '' !== $typo_id && isset( $kit_typo[ $typo_id ] ) ) {
+					// Expand all typography_* properties into widget settings.
+					// The $setting_key is the base (e.g. 'typography' or 'title_typography').
+					// Prefixed sub-keys: $setting_key_font_family, $setting_key_font_size, etc.
+					$prefix = ( 'typography' === $setting_key ) ? '' : $setting_key . '_';
+					foreach ( $kit_typo[ $typo_id ] as $prop => $val ) {
+						// prop is e.g. 'typography_font_family'; strip leading 'typography_'.
+						$sub = substr( $prop, strlen( 'typography_' ) );
+						$settings[ $prefix . 'typography_' . $sub ] = $val;
+					}
+				}
 				continue;
 			}
-
-			// Look up the color ID in the kit map.
-			if ( ! isset( $kit_colors[ $color_id ] ) ) {
-				continue;
-			}
-
-			$resolved_hex = $kit_colors[ $color_id ];
-
-			// Overwrite the inline setting with the resolved global value.
-			// __globals__ takes precedence over inline values in V3.
-			$settings[ $setting_key ] = $resolved_hex;
 		}
 	}
 }
