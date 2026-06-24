@@ -127,7 +127,7 @@ class Atomic_Widgets {
         wp_register_ability($name, [
             'label'               => __('Add Atomic Widget', 'novamira-adrianv2'),
             'description'         => __('Adds any Elementor 4.0+ atomic widget to a container. Settings must use the $$type prop format. For simpler usage, prefer the convenience tools (add-atomic-heading, etc.).', 'novamira-adrianv2'),
-            'category'            => 'elementor',
+            'category'            => 'adrianv2-elementor',
             'execute_callback'    => [self::class, 'execute_add_atomic_widget'],
             'permission_callback' => 'novamira_permission_callback',
             'input_schema'        => [
@@ -207,7 +207,7 @@ class Atomic_Widgets {
         wp_register_ability($name, [
             'label'               => __('Update Atomic Widget', 'novamira-adrianv2'),
             'description'         => __('Updates settings on an existing Elementor 4.0+ atomic widget. Performs a partial merge — only provided keys are changed.', 'novamira-adrianv2'),
-            'category'            => 'elementor',
+            'category'            => 'adrianv2-elementor',
             'execute_callback'    => [self::class, 'execute_update_atomic_widget'],
             'permission_callback' => 'novamira_permission_callback',
             'input_schema'        => [
@@ -308,7 +308,7 @@ class Atomic_Widgets {
         wp_register_ability($full_name, [
             'label'               => $label,
             'description'         => $description,
-            'category'            => 'elementor',
+            'category'            => 'adrianv2-elementor',
             'execute_callback'    => function ($input) use ($widget_type, $settings_fn) {
                 $settings = $settings_fn($input);
                 $element  = self::create_atomic_widget($widget_type, $settings);
