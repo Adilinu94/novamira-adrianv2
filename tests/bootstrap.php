@@ -132,7 +132,7 @@ if ( ! function_exists( 'wp_strip_all_tags' ) ) {
 		return strip_tags( $text );
 	}
 }
-
+if ( ! defined( 'DAY_IN_SECONDS' ) ) {
 	define( 'DAY_IN_SECONDS', 86400 );
 }
 require_once __DIR__ . '/../includes/abilities/elementor/class-list-v3-pages.php';
