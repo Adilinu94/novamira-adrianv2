@@ -15,7 +15,7 @@ class List_Templates {
         wp_register_ability('novamira-adrianv2/list-templates', [
             'label'               => 'List Templates',
             'description'         => 'Queries Elementor templates and Theme Builder items. Can include display conditions and estimate which templates apply to a specific post.',
-            'category'            => 'novamira-adrianv2',
+            'category'            => 'adrianv2-elementor',
             'input_schema'        => [
                 'type'       => 'object',
                 'properties' => [
