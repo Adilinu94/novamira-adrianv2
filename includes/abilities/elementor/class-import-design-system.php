@@ -17,7 +17,7 @@ class Import_Design_System
         wp_register_ability('novamira-adrianv2/import-design-system', [
             'label'               => 'Import Design System',
             'description'         => 'Import a design system from JSON. Supports conflict resolution strategies: "skip" (keep existing), "overwrite" (replace existing), "rename" (add numeric suffix). Handles colors, typography, and global classes.',
-            'category'            => 'novamira-adrianv2',
+            'category'            => 'adrianv2-elementor',
             'input_schema'        => [
                 'type'       => 'object',
                 'properties' => [
