@@ -172,3 +172,6 @@ if ( class_exists( 'Novamira\AdrianV2\Abilities\Elementor\Get_Page_Elements' ) &
 if ( class_exists( 'Novamira\AdrianV2\Abilities\Elementor\Register_Google_Font' ) && method_exists( 'Novamira\AdrianV2\Abilities\Elementor\Register_Google_Font', 'register' ) ) {
 	Novamira\AdrianV2\Abilities\Elementor\Register_Google_Font::register();
 }
+if ( class_exists( 'Novamira\AdrianV2\Abilities\Elementor\Upgrade_Page_To_V4' ) && method_exists( 'Novamira\AdrianV2\Abilities\Elementor\Upgrade_Page_To_V4', 'register' ) ) {
+	Novamira\AdrianV2\Abilities\Elementor\Upgrade_Page_To_V4::register();
+}
