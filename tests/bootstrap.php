@@ -127,7 +127,12 @@ if ( ! function_exists( 'wp_delete_nav_menu' ) ) {
 if ( ! function_exists( 'deactivate_plugins' ) ) {
 	function deactivate_plugins( mixed $plugins, bool $silent = false, mixed $network_wide = null ): void {} // phpcs:ignore
 }
-if ( ! defined( 'DAY_IN_SECONDS' ) ) {
+if ( ! function_exists( 'wp_strip_all_tags' ) ) {
+	function wp_strip_all_tags( string $text, bool $remove_breaks = false ): string { // phpcs:ignore
+		return strip_tags( $text );
+	}
+}
+
 	define( 'DAY_IN_SECONDS', 86400 );
 }
 require_once __DIR__ . '/../includes/abilities/elementor/class-list-v3-pages.php';
