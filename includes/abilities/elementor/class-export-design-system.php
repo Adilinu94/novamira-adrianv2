@@ -17,7 +17,7 @@ class Export_Design_System
         wp_register_ability('novamira-adrianv2/export-design-system', [
             'label'               => 'Export Design System',
             'description'         => 'Export the complete Elementor design system as structured JSON. Includes global colors, typography, global classes (with styles), and optional kit layout settings. Use for backups, migration, or cross-site design syncing.',
-            'category'            => 'novamira-adrianv2',
+            'category'            => 'adrianv2-elementor',
             'input_schema'        => [
                 'type'       => 'object',
                 'properties' => [
