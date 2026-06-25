@@ -16,7 +16,7 @@ class Edit_Interaction
         wp_register_ability('novamira-adrianv2/edit-interaction', [
             'label'               => 'Edit Interaction',
             'description'         => 'Updates an existing interaction on an atomic v4 element by zero-based index. Partial updates preserve unspecified fields.',
-            'category'            => 'novamira-adrianv2',
+            'category'            => 'adrianv2-elementor',
             'input_schema'        => [
                 'type'       => 'object',
                 'properties' => [
