@@ -22,7 +22,7 @@ class Hello_World
         wp_register_ability('novamira-adrianv2/greet', [
             'label'               => 'Hello World Greet',
             'description'         => 'Returns a greeting message. Accepts an optional name parameter.',
-            'category'            => 'novamira-adrianv2',
+            'category'            => 'adrianv2-utilities',
             'input_schema'        => [
                 'type'       => 'object',
                 'properties' => [
