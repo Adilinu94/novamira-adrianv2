@@ -15,7 +15,7 @@ class Global_Widgets {
         wp_register_ability('novamira-adrianv2/global-widgets', [
             'label'               => 'Global Widgets',
             'description'         => 'Manage Elementor Global Widgets: list all saved global widgets, save any widget from a page as a new global widget, or insert an existing global widget into a page.',
-            'category'            => 'novamira-adrianv2',
+            'category'            => 'adrianv2-elementor',
             'input_schema'        => [
                 'type'       => 'object',
                 'properties' => [
