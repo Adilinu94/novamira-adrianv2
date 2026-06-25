@@ -30,7 +30,7 @@ class Batch_Build_Page {
         wp_register_ability('novamira-adrianv2/batch-build-page', [
             'label'       => 'Batch Build Page',
             'description' => 'Builds a complete Elementor V4 page from a JSON element tree in one call. Fully supports V4 Atomic Widgets (e-heading, e-paragraph, e-button, e-image, e-svg, e-divider, e-youtube) with $$type settings + local styles, AND V3 containers/widgets. Creates the page if no post_id is given. Supports page-level CSS and JS injection. Returns post ID, permalink, edit URL, and element summary. Always prefer atomic widgets for V4 pages.',
-            'category'    => 'novamira-adrianv2',
+            'category'    => 'adrianv2-elementor',
             'input_schema' => [
                 'type'       => 'object',
                 'properties' => [
