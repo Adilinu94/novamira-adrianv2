@@ -17,7 +17,7 @@ class Add_Global_Class_Variant
         wp_register_ability('novamira-adrianv2/add-global-class-variant', [
             'label'               => 'Add Class Variant',
             'description'         => 'Add a responsive or state variant to an existing v4 Global Class. Each variant defines CSS properties for a specific breakpoint (desktop, tablet, mobile) and/or state (hover, focus, active). This is how v4 classes achieve responsive styling that v3 typography presets cannot.',
-            'category'            => 'novamira-adrianv2',
+            'category'            => 'adrianv2-elementor',
             'input_schema'        => [
                 'type'       => 'object',
                 'properties' => [
