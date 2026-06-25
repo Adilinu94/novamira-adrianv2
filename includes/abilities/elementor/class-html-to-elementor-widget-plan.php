@@ -26,7 +26,7 @@ class Html_To_Elementor_Widget_Plan
         wp_register_ability('novamira-adrianv2/html-to-elementor-widget-plan', [
             'label'       => 'HTML to Elementor Widget Plan',
             'description' => 'Analyzes HTML and creates a structured Elementor widget conversion plan. Maps tags to native v4/v3 widgets, extracts CSS/JS assets, flags unconvertible parts, estimates native widget coverage, and returns a simplified tree for building pages with Elementor widgets instead of HTML dumps.',
-            'category'    => 'novamira-adrianv2',
+            'category'    => 'adrianv2-elementor',
             'input_schema' => [
                 'type'       => 'object',
                 'properties' => [
