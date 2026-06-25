@@ -17,7 +17,7 @@ class Detach_Component
         wp_register_ability('novamira-adrianv2/detach-component', [
             'label'               => 'Detach Component',
             'description'         => 'Detach a global widget or template instance from its source, converting it to regular elements. Operates on elements with a templateID reference (global widget instances). Also works on nested template containers by recursively detaching all referenced instances.',
-            'category'            => 'novamira-adrianv2',
+            'category'            => 'adrianv2-elementor',
             'input_schema'        => [
                 'type'       => 'object',
                 'properties' => [
