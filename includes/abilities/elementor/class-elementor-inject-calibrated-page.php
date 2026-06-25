@@ -95,6 +95,16 @@ final class Elementor_Inject_Calibrated_Page {
 					'properties' => array(
 						'success'            => array( 'type' => 'boolean' ),
 						'post_id'            => array( 'type' => 'integer' ),
+						'sections_count'     => array( 'type' => 'integer' ),
+						'kit_id'             => array( 'type' => 'integer' ),
+						'warnings'           => array( 'type' => 'array' ),
+						'blocks_invalidated' => array( 'type' => 'array' ),
+						'saved_at'           => array( 'type' => 'string' ),
+						'element_id_map'     => array(
+							'type'                 => 'object',
+							'description'          => 'Flat map of { element_id => type } for all elements in the injected tree. Allows PixelElementResolver in site-clone-to-v3 to correlate pixel regions to server-assigned IDs.',
+							'additionalProperties' => array( 'type' => 'string' ),
+						),
 						'sections_count'     => array(
 							'type'        => 'integer',
 							'description' => __( 'Top-level element count in the post-mutation tree (or in the merge deltas, when mode=merge_by_id).', 'novamira-adrianv2' ),
@@ -279,6 +289,7 @@ final class Elementor_Inject_Calibrated_Page {
 			'warnings'           => $warnings,
 			'blocks_invalidated' => array( 'post_css', 'files_manager_global', 'post_meta_cache' ),
 			'saved_at'           => gmdate( 'c' ),
+			'element_id_map'     => self::extract_element_id_map( $el_data ),
 		);
 	}
 
@@ -291,6 +302,40 @@ final class Elementor_Inject_Calibrated_Page {
 	 * @param int $post_id
 	 * @return bool
 	 */
+	/**
+	 * Build a flat map of { element_id → elType/widgetType } for the entire tree.
+	 * Used by PixelElementResolver in site-clone-to-v3 to correlate pixel regions
+	 * to server-assigned element IDs after a page push.
+	 *
+	 * @param array $elements
+	 * @return array<string, string>  e.g. { "a1b2c3d4" => "widget:heading", "e5f6g7h8" => "container" }
+	 */
+	private static function extract_element_id_map( array $elements ): array {
+		$map = [];
+		self::walk_element_ids( $elements, $map );
+		return $map;
+	}
+
+	private static function walk_element_ids( array $elements, array &$map ): void {
+		foreach ( $elements as $el ) {
+			$id = $el['id'] ?? '';
+			if ( $id === '' ) {
+				continue;
+			}
+
+			$el_type = $el['elType'] ?? 'unknown';
+			$label   = $el_type;
+			if ( $el_type === 'widget' ) {
+				$label = 'widget:' . ( $el['widgetType'] ?? 'unknown' );
+			}
+			$map[ $id ] = $label;
+
+			if ( ! empty( $el['elements'] ) && is_array( $el['elements'] ) ) {
+				self::walk_element_ids( $el['elements'], $map );
+			}
+		}
+	}
+
 	private static function check_inject_permission( int $post_id ): bool {
 		if ( ! current_user_can( 'edit_post', $post_id ) ) {
 			return false;
