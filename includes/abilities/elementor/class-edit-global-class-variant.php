@@ -17,7 +17,7 @@ class Edit_Global_Class_Variant
         wp_register_ability('novamira-adrianv2/edit-global-class-variant', [
             'label'               => 'Edit Class Variant',
             'description'         => 'Edit an existing variant on a Global Class. Target by variant index (0-based) or by breakpoint+state combination. Supports merge (default) or replace mode. Use list-class-variants first to discover indices.',
-            'category'            => 'novamira-adrianv2',
+            'category'            => 'adrianv2-elementor',
             'input_schema'        => [
                 'type'       => 'object',
                 'properties' => [
