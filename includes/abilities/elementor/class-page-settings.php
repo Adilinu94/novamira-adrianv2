@@ -15,7 +15,7 @@ class Page_Settings {
         wp_register_ability('novamira-adrianv2/page-settings', [
             'label'               => 'Page Settings',
             'description'         => 'Reads or updates Elementor page-level settings: page template, title visibility, custom CSS, body classes, and arbitrary _elementor_page_settings keys.',
-            'category'            => 'novamira-adrianv2',
+            'category'            => 'adrianv2-elementor',
             'input_schema'        => [
                 'type'       => 'object',
                 'properties' => [
