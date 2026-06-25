@@ -17,7 +17,7 @@ class Apply_Variable_To_Class
         wp_register_ability('novamira-adrianv2/apply-variable-to-class', [
             'label'               => 'Apply Variable to Class',
             'description'         => 'Set a CSS property on a Global Class variant to reference a v4 Variable (design token) instead of a hardcoded value. Stores the variable reference as var(--e-global-<type>-<id>) so that changing the variable automatically updates all classes that reference it. This is the critical binding that makes v4 a true design-token system.',
-            'category'            => 'novamira-adrianv2',
+            'category'            => 'adrianv2-elementor',
             'input_schema'        => [
                 'type'       => 'object',
                 'properties' => [
