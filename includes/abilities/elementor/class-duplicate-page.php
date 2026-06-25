@@ -15,7 +15,7 @@ class Duplicate_Page {
         wp_register_ability('novamira-adrianv2/duplicate-page', [
             'label'               => 'Duplicate Page',
             'description'         => 'Creates a full copy of a page including Elementor data, page settings, featured image, and optionally regenerates element IDs to avoid CSS conflicts.',
-            'category'            => 'novamira-adrianv2',
+            'category'            => 'adrianv2-elementor',
             'input_schema'        => [
                 'type'       => 'object',
                 'properties' => [
