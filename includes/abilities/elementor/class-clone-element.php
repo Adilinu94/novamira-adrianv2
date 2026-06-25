@@ -15,7 +15,7 @@ class Clone_Element {
         wp_register_ability('novamira-adrianv2/clone-element', [
             'label'               => 'Clone Element',
             'description'         => 'Copies an Elementor element and all children within or between pages. Regenerates element IDs and local style IDs, updates local class references, inserts at root or under a target parent, and clears Elementor caches.',
-            'category'            => 'novamira-adrianv2',
+            'category'            => 'adrianv2-elementor',
             'input_schema'        => [
                 'type'       => 'object',
                 'properties' => [
