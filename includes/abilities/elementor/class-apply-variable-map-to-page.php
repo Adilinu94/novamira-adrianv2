@@ -35,7 +35,7 @@ class Apply_Variable_Map_To_Page {
 			array(
 				'label'               => 'Apply Variable Map to Page',
 				'description'         => 'Walks the _elementor_data of a V4 page and replaces inline {$$type:\'color\'} values with {$$type:\'global-color-variable\'} references where a matching hex exists in the variable_map. Run after convert-page-v3-to-v4 to bind the Design System. dry_run:true by default.',
-				'category'            => 'novamira-adrianv2',
+				'category'            => 'adrianv2-elementor',
 				'input_schema'        => array(
 					'type'       => 'object',
 					'required'   => array( 'post_id', 'variable_map' ),
