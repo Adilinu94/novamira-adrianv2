@@ -27,7 +27,7 @@ class List_V3_Pages {
 			[
 				'label'       => 'List V3 Pages',
 				'description' => 'Fast scan of all Elementor posts. Returns per-post V3/V4/mixed/empty status. Use to identify which pages still need convert-page-v3-to-v4.',
-				'category'    => 'novamira-adrianv2',
+				'category'    => 'adrianv2-elementor',
 				'input_schema' => [
 					'type'       => 'object',
 					'properties' => [
