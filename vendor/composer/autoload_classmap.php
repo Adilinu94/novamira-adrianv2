@@ -38,6 +38,7 @@ return array(
     'Novamira\\AdrianV2\\Abilities\\Elementor\\Edit_Interaction' => $baseDir . '/includes/abilities/elementor/class-edit-interaction.php',
     'Novamira\\AdrianV2\\Abilities\\Elementor\\Elementor_Assign_Class_To_Containers' => $baseDir . '/includes/abilities/elementor/class-elementor-assign-class-to-containers.php',
     'Novamira\\AdrianV2\\Abilities\\Elementor\\Elementor_Check_Setup' => $baseDir . '/includes/abilities/elementor/class-elementor-check-setup.php',
+    'Novamira\\AdrianV2\\Abilities\\Elementor\\Get_Page_Elements' => $baseDir . '/includes/abilities/elementor/class-get-page-elements.php',
     'Novamira\\AdrianV2\\Abilities\\Elementor\\Elementor_Edit_Element' => $baseDir . '/includes/abilities/elementor/class-elementor-edit-element.php',
     'Novamira\\AdrianV2\\Abilities\\Elementor\\Elementor_Inject_Calibrated_Page' => $baseDir . '/includes/abilities/elementor/class-elementor-inject-calibrated-page.php',
     'Novamira\\AdrianV2\\Abilities\\Elementor\\Execute_Build_Plan' => $baseDir . '/includes/abilities/elementor/class-execute-build-plan.php',

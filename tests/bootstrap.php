@@ -133,3 +133,4 @@ if ( ! defined( 'DAY_IN_SECONDS' ) ) {
 require_once __DIR__ . '/../includes/abilities/elementor/class-list-v3-pages.php';
 require_once __DIR__ . '/../includes/abilities/elementor/class-fix-orphan-styles.php';
 require_once __DIR__ . '/../includes/abilities/clonerlabs/class-clonerlabs-style-minifier.php';
+require_once __DIR__ . '/../includes/abilities/elementor/class-get-page-elements.php';

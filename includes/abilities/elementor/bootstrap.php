@@ -166,3 +166,6 @@ if ( class_exists( 'Novamira\AdrianV2\Abilities\Elementor\List_V3_Pages' ) && me
 if ( class_exists( 'Novamira\AdrianV2\Abilities\Elementor\Elementor_Edit_Element' ) && method_exists( 'Novamira\AdrianV2\Abilities\Elementor\Elementor_Edit_Element', 'register' ) ) {
 	Novamira\AdrianV2\Abilities\Elementor\Elementor_Edit_Element::register();
 }
+if ( class_exists( 'Novamira\AdrianV2\Abilities\Elementor\Get_Page_Elements' ) && method_exists( 'Novamira\AdrianV2\Abilities\Elementor\Get_Page_Elements', 'register' ) ) {
+	Novamira\AdrianV2\Abilities\Elementor\Get_Page_Elements::register();
+}
