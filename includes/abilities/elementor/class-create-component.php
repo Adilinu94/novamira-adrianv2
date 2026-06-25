@@ -17,7 +17,7 @@ class Create_Component
         wp_register_ability('novamira-adrianv2/create-component', [
             'label'               => 'Create Component',
             'description'         => 'Extract elements from a page and save them as a new container template (component) in the Elementor library. Elements are located by their IDs and extracted with their full subtree.',
-            'category'            => 'novamira-adrianv2',
+            'category'            => 'adrianv2-elementor',
             'input_schema'        => [
                 'type'       => 'object',
                 'properties' => [
