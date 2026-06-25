@@ -21,10 +21,10 @@ if (!defined('ABSPATH')) exit();
 class Execute_Build_Plan {
     public static function register(): void {
         Diagnostics::record('execute-build-plan', 'register');
-        wp_register_ability('novamira/adrians-execute-build-plan', [
+        wp_register_ability('novamira-adrianv2/execute-build-plan', [
             'label'       => 'Execute Build Plan',
             'description' => 'Führt einen vollständigen Build-Plan in einem Call aus. Akzeptiert eine Liste von Schritten (foundation, set-content, patch-styles, QA) und führt sie sequentiell aus.',
-            'category'    => 'adrians',
+            'category'    => 'adrianv2-elementor',
             'input_schema' => [
                 'type'       => 'object',
                 'properties' => [
@@ -35,6 +35,11 @@ class Execute_Build_Plan {
                     'dry_run' => [
                         'type'        => 'boolean',
                         'description' => 'Nur validieren, nicht ausführen.',
+                    ],
+                    'media_uploads' => [
+                        'type'        => 'array',
+                        'description' => 'Optional: Array von {url, title} Objekten. Medien werden vor dem Build sideloaded. URLs im Plan werden dann durch WP-Attachment-URLs ersetzt.',
+                        'items'       => ['type' => 'object'],
                     ],
                 ],
                 'required' => ['plan'],
@@ -48,6 +53,8 @@ class Execute_Build_Plan {
                     'total_time_ms'     => ['type' => 'number'],
                     'results'           => ['type' => 'array'],
                     'error'             => ['type' => 'string'],
+                    'media_uploaded'     => ['type' => 'integer'],
+                    'media_map'          => ['type' => 'object'],
                 ],
             ],
             'execute_callback'    => [self::class, 'execute'],
@@ -71,7 +78,31 @@ class Execute_Build_Plan {
             return ['success' => false, 'error' => 'plan must be an object or JSON string.'];
         }
 
-        $dry_run = !empty($input['dry_run']);
+        $dry_run      = !empty($input['dry_run']);
+        $media_uploads = $input['media_uploads'] ?? [];
+        $media_map     = [];
+
+        // Phase 0: Sideload media before build if provided.
+        if (!empty($media_uploads) && !$dry_run) {
+            if (!function_exists('media_handle_sideload')) {
+                require_once ABSPATH . 'wp-admin/includes/media.php';
+                require_once ABSPATH . 'wp-admin/includes/file.php';
+                require_once ABSPATH . 'wp-admin/includes/image.php';
+            }
+            foreach ($media_uploads as $item) {
+                $url = $item['url'] ?? '';
+                if (empty($url)) continue;
+                $tmp = download_url($url, 30);
+                if (is_wp_error($tmp)) { continue; }
+                $filename = sanitize_file_name(basename(wp_parse_url($url, PHP_URL_PATH) ?? 'image.jpg') ?: 'image.jpg');
+                $att_id = media_handle_sideload(['name' => $filename, 'tmp_name' => $tmp], 0);
+                @unlink($tmp);
+                if (!is_wp_error($att_id)) {
+                    $media_map[$url] = wp_get_attachment_url($att_id);
+                }
+            }
+        }
+
         $steps   = $plan['steps'] ?? [];
 
         if (empty($steps)) {
