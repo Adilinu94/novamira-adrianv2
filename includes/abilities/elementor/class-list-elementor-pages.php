@@ -15,7 +15,7 @@ class List_Elementor_Pages {
         wp_register_ability('novamira-adrianv2/list-elementor-pages', [
             'label'               => 'List Elementor Pages',
             'description'         => 'Finds pages, posts, and Elementor Library items built with Elementor. Supports filters, pagination, top-level section summaries, and lightweight v3/v4/atomic stats.',
-            'category'            => 'novamira-adrianv2',
+            'category'            => 'adrianv2-elementor',
             'input_schema'        => [
                 'type'       => 'object',
                 'properties' => [
