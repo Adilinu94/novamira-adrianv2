@@ -17,7 +17,7 @@ class Kit_Convert_V3_To_V4
         wp_register_ability('novamira-adrianv2/kit-convert-v3-to-v4', [
             'label'               => 'Convert Kit v3 to v4',
             'description'         => 'Full orchestration: converts Elementor v3 Global Kit (colors + typography presets) into the v4 design-token system with variables, global classes, and responsive variants. All 4 phases in one call. Use this to modernize a v3 kit automatically.',
-            'category'            => 'novamira-adrianv2',
+            'category'            => 'adrianv2-elementor',
             'input_schema'        => [
                 'type'       => 'object',
                 'properties' => [
