@@ -1,5 +1,29 @@
 # Changelog — Novamira AdrianV2
 
+## [1.5.1] — 2026-06
+
+### Added — Framer Pipeline Integration (Proposals #3, #4, #6, #9)
+
+| Ability | Zweck |
+|---|---|
+| `novamira-adrianv2/ensure-atomic-experiments` | Liest und setzt Elementor Experiment-Flags (e_atomic_elements etc.) — ersetzt ensure-elementor-experiments.js |
+| `novamira-adrianv2/validate-v4-tree` | Server-side V4-Validierung inkl. Experiment-Flag-Check und Tree-Analyse — ersetzt validate-v4-tree.js + check-v4-requirements.js |
+| `novamira-adrianv2/list-style-keys` | Exponiert V4_Props-Methodenkatalog live — eliminiert Drift zwischen framer-pre-build-validate.js, style-props-quickref.md und PHP |
+
+### Fixed
+- `execute-build-plan`: Slug von `novamira/adrians-execute-build-plan` auf `novamira-adrianv2/execute-build-plan` korrigiert (Proposal #6)
+- `execute-build-plan`: Category von `adrians` auf `adrianv2-elementor` korrigiert
+- `execute-build-plan`: `media_uploads` Phase 0 hinzugefügt (sideload vor Build-Schritten)
+
+### Not implemented (with rationale)
+- **#2 adrians-revalidate-foundation**: Skip — GC/Variable-IDs sind instabil, Cache würde silent bugs einführen
+- **#5 adrians-discover-ability-metadata**: Low priority — WP Abilities API exponiert bereits Schemas
+- **#7 X-Pipeline-Version Header**: Skip — MCP routet keine HTTP-Headers zu PHP-Callbacks
+- **#8 adrians-inject-wpcode-with-cache-bust**: Skip — zu spezifisch für Swiper, besser in Pipeline gelöst
+- **#10 adrians-rollback-build**: Bereits implementiert in v4-management/class-rollback-build.php
+
+---
+
 ## [1.5.0] — 2026-06
 
 ### Added — ClonerLabs Integration
