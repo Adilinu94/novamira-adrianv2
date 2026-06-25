@@ -17,7 +17,7 @@ class Insert_Component
         wp_register_ability('novamira-adrianv2/insert-component', [
             'label'               => 'Insert Component',
             'description'         => 'Insert a saved container template (component) into a page. Supports before/after/inside a target element, or append to the end. Element IDs are regenerated to avoid conflicts.',
-            'category'            => 'novamira-adrianv2',
+            'category'            => 'adrianv2-elementor',
             'input_schema'        => [
                 'type'       => 'object',
                 'properties' => [
