@@ -31,7 +31,7 @@ class Upgrade_Page_To_V4 {
 			[
 				'label'       => 'Upgrade Page(s) to Elementor V4',
 				'description' => 'Batch wrapper around convert-page-v3-to-v4. Pass one or more post IDs to convert from Elementor V3 widget format to V4 Atomic Widgets in a single call. Designed as the final --upgrade-to-v4 step in the site-clone-to-v3 pipeline after pages have been pushed. Skips pages already in V4 by default. Returns per-page result map.',
-				'category'    => 'novamira-adrianv2',
+				'category'    => 'adrianv2-elementor',
 				'input_schema' => [
 					'type'       => 'object',
 					'required'   => [ 'post_ids' ],
