@@ -82,3 +82,39 @@ Prüft Layout-Struktur, Class-Coverage und Variable-Nutzung. Gibt Scores und Fix
 - **`e-flexbox` vs `container`**: V4 nutzt `e-flexbox`/`e-div-block`, NICHT `container`. Falscher elType → Element wird nicht gerendert.
 - **Kein `batch-build-page` nach `set-content`**: Beide schreiben `_elementor_data` — der zweite Call überschreibt den ersten.
 - **Foundation NUR bei neuem Site-Setup**: `setup-v4-foundation` ist idempotent aber erzeugt Log-Einträge bei jedem Call.
+
+## Schritt 7: Cache leeren nach Build (Novamira v1.7.1+)
+
+Nach jedem Build muss der Elementor-Pro-Element-Cache geleert werden, sonst zeigt das Frontend die alten gecachten Elemente:
+
+```json
+{
+  "ability": "novamira-adrianv2/clear-cache",
+  "parameters": {
+    "post_id": 1234,
+    "include_nested": true
+  }
+}
+```
+
+**`include_nested: true`** ist wichtig: Nested Templates cachen unabhängig voneinander (Header, Footer, Section-Templates). Ohne diesen Flag sieht man die Änderungen in eingebetteten Templates nicht.
+
+**Wann nötig:**
+- Nach `batch-build-page`
+- Nach `elementor-set-content`
+- Nach `patch-element-styles`
+- Nach `edit-global-class-variant`
+
+**Wann NICHT nötig:**
+- Bei reinen Inhaltsedit ohne Layout-Änderung (Text, Bild)
+- Auf Sites ohne Elementor Pro (kein Element-Cache ohne Pro)
+
+## Schritt 8 (optional): Frontend-Screenshot für QA
+
+Nach Cache-Clear kann der Agent einen Screenshot veranlassen um das Ergebnis zu vergleichen:
+```json
+{
+  "ability": "novamira-adrianv2/visual-qa",
+  "parameters": { "post_id": 1234, "mode": "screenshot" }
+}
+```
