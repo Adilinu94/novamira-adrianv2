@@ -41,6 +41,7 @@ $novamira_adrianv2_elementor_files = array(
 	__DIR__ . '/class-remove-global-class.php',
 	__DIR__ . '/class-reorder-element.php',
 	__DIR__ . '/class-setup-v4-foundation.php',
+	__DIR__ . '/class-clear-cache.php',
 );
 
 foreach ( $novamira_adrianv2_elementor_files as $novamira_adrianv2_elementor_file ) {
@@ -183,4 +184,7 @@ if ( class_exists( 'Novamira\AdrianV2\Abilities\Elementor\Ensure_Atomic_Experime
 }
 if ( class_exists( 'Novamira\AdrianV2\Abilities\Elementor\Validate_V4_Tree' ) && method_exists( 'Novamira\AdrianV2\Abilities\Elementor\Validate_V4_Tree', 'register' ) ) {
 	Novamira\AdrianV2\Abilities\Elementor\Validate_V4_Tree::register();
+}
+if ( class_exists( 'Novamira\\AdrianV2\\Abilities\\Elementor\\Clear_Cache' ) && method_exists( 'Novamira\\AdrianV2\\Abilities\\Elementor\\Clear_Cache', 'register' ) ) {
+	Novamira\AdrianV2\Abilities\Elementor\Clear_Cache::register();
 }

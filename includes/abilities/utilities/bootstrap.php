@@ -9,6 +9,7 @@ $novamira_adrianv2_utilities_files = [
     __DIR__ . '/class-self-audit.php',
     __DIR__ . '/class-get-project-styles.php',
     __DIR__ . '/class-catalog-abilities.php',
+    __DIR__ . '/class-skill-list.php',
 ];
 
 foreach ( $novamira_adrianv2_utilities_files as $novamira_adrianv2_utilities_file ) {
@@ -33,4 +34,7 @@ foreach ( $novamira_adrianv2_utilities_files as $novamira_adrianv2_utilities_fil
         }
         if ( class_exists( 'Novamira\AdrianV2\Abilities\Utilities\List_Style_Keys' ) && method_exists( 'Novamira\AdrianV2\Abilities\Utilities\List_Style_Keys', 'register' ) ) {
             Novamira\AdrianV2\Abilities\Utilities\List_Style_Keys::register();
+        }
+        if ( class_exists( 'Novamira\\AdrianV2\\Abilities\\Utilities\\Skill_List' ) && method_exists( 'Novamira\\AdrianV2\\Abilities\\Utilities\\Skill_List', 'register' ) ) {
+            Novamira\AdrianV2\Abilities\Utilities\Skill_List::register();
         }

@@ -21,7 +21,12 @@ class Patch_Element_Styles
             'input_schema' => [
                 'type' => 'object',
                 'properties' => [
-                    'post_id' => ['type' => 'integer', 'description' => 'Page/post ID to patch.'],
+                    'post_id' => ['type' => 'integer', 'description' => 'Page/post ID to patch. Use post_ids for batch.'],
+                    'post_ids' => [
+                        'type'        => 'array',
+                        'description' => 'Multiple post IDs to apply the same patches to in one call.',
+                        'items'       => ['type' => 'integer'],
+                    ],
                     'patches' => [
                         'type' => 'array',
                         'description' => 'Array of patch operations, each targeting one element by ID.',
@@ -42,7 +47,7 @@ class Patch_Element_Styles
                         ],
                     ],
                 ],
-                'required' => ['post_id', 'patches'],
+                'required' => [],
             ],
             'output_schema' => [
                 'type' => 'object',
@@ -66,18 +71,35 @@ class Patch_Element_Styles
 
     public static function execute($input = null)
     {
+        $post_id  = (int)   ($input['post_id']  ?? 0);
+        $post_ids = (array) ($input['post_ids'] ?? []);
+        $patches  = $input['patches'] ?? [];
+        $opt_in   = (bool)  ($input['opt_in']   ?? false);
+
+        // Normalise: single post_id → post_ids list
+        if ($post_id > 0 && !in_array($post_id, $post_ids, true)) {
+            $post_ids[] = $post_id;
+        }
+
+        if (empty($post_ids)) {
+            return ['success' => false, 'error' => 'Provide post_id or post_ids.'];
+        }
+
+        // Multi-post mode
+        if (count($post_ids) > 1) {
+            return self::execute_batch($post_ids, $patches, $opt_in);
+        }
+
+        // Single-post mode (original behaviour)
+        $post_id = (int) reset($post_ids);
+
         // V3/V4 page version guard (1.1.0).
-        $post_id = (int) ($input['post_id'] ?? 0);
-        $opt_in  = (bool) ($input['opt_in'] ?? false);
-        if ($post_id > 0 && !$opt_in) {
+        if (!$opt_in) {
             $page_v4 = \Novamira\AdrianV2\Helpers\Elementor_Version_Resolver::page_is_v4($post_id);
             if (!$page_v4) {
                 return new \WP_Error('page_version_mismatch', __('patch-element-styles operates on V4 atomic pages only. Use elementor-set-content for V3 pages. Pass opt_in: true to override.', 'novamira-adrianv2'));
             }
         }
-
-        $post_id = (int) $input['post_id'];
-        $patches = $input['patches'] ?? [];
 
         if (!$post_id || !get_post($post_id)) {
             return ['success' => false, 'error' => "Post {$post_id} not found."];
@@ -116,6 +138,45 @@ class Patch_Element_Styles
             'patched_count' => $patched,
             'not_found'     => $not_found,
             'permalink'     => get_permalink($post_id),
+        ];
+    }
+
+    /**
+     * Apply the same patches to multiple posts.
+     *
+     * @param int[]  $post_ids
+     * @param array  $patches
+     * @param bool   $opt_in
+     * @return array
+     */
+    private static function execute_batch(array $post_ids, array $patches, bool $opt_in): array
+    {
+        $results      = [];
+        $total_patched = 0;
+
+        foreach ($post_ids as $pid) {
+            $pid = (int) $pid;
+            if ($pid <= 0 || !get_post($pid)) {
+                $results[] = ['post_id' => $pid, 'success' => false, 'error' => 'Post not found.'];
+                continue;
+            }
+
+            $result = self::execute(['post_id' => $pid, 'patches' => $patches, 'opt_in' => $opt_in]);
+
+            if ($result instanceof \WP_Error) {
+                $results[] = ['post_id' => $pid, 'success' => false, 'error' => $result->get_error_message()];
+            } else {
+                $total_patched += (int) ($result['patched_count'] ?? 0);
+                $results[]      = array_merge(['post_id' => $pid], $result);
+            }
+        }
+
+        return [
+            'success'            => true,
+            'batch'              => true,
+            'total_patched'      => $total_patched,
+            'post_count'         => count($post_ids),
+            'results'            => $results,
         ];
     }
 

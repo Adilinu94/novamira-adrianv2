@@ -27,29 +27,7 @@ class Site_Tools
         $write = ['readonly' => false, 'destructive' => true,  'idempotent' => true];
         $danger = ['readonly' => false, 'destructive' => true, 'idempotent' => false];
 
-        // 1. clear-cache
-        wp_register_ability('novamira-adrianv2/clear-cache', [
-            'label'       => 'Clear Elementor Cache',
-            'description' => 'Clears Elementor\'s CSS cache and regenerates files. Equivalent to Elementor > Tools > Regenerate CSS.',
-            'category'    => 'adrianv2-site-tools',
-            'input_schema' => [
-                'type'       => 'object',
-                'properties' => [
-                    'scope' => ['type' => 'string', 'enum' => ['css', 'all'], 'description' => 'Cache scope. "css" = regenerate CSS files only. "all" = full cache clear. Default: css.'],
-                ],
-                'required' => [],
-            ],
-            'output_schema' => [
-                'type'       => 'object',
-                'properties' => [
-                    'success' => ['type' => 'boolean'],
-                    'summary' => ['type' => 'string'],
-                ],
-            ],
-            'execute_callback'    => [self::class, 'execute_clear_cache'],
-            'permission_callback' => 'novamira_permission_callback',
-            'meta' => array_merge($common, ['annotations' => $write]),
-        ]);
+        // clear-cache is now registered by class-clear-cache.php (standalone, enhanced)
 
         // 2. get-maintenance-mode
         wp_register_ability('novamira-adrianv2/get-maintenance-mode', [
