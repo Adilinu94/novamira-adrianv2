@@ -5,7 +5,7 @@
 declare(strict_types=1);
 
 /**
- * Skill Installer — installs the 8 adrianv2-* skills as novamira_skill CPT posts.
+ * Skill Installer — installs the adrianv2-* skills as novamira_skill CPT posts.
  *
  * Runs on plugin activation. Idempotent: checks if a skill with the same
  * post_name already exists before inserting. Does NOT delete skills on
@@ -26,7 +26,7 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Installs the 8 adrianv2-* skills on plugin activation.
+ * Installs the adrianv2-* skills on plugin activation.
  *
  * @since 1.1.0
  */
@@ -47,6 +47,10 @@ final class Installer {
         'adrianv2-self-audit',
         'adrianv2-rollback-build',
         'adrianv2-clonerlabs',
+        'adrianv2-live-edit',
+        'adrianv2-framer-pipeline-import',
+        'adrianv2-site-clone-import',
+        'adrianv2-novamira-context-page',
     ];
 
     /**
@@ -63,7 +67,11 @@ final class Installer {
         'adrianv2-discover-abilities-protocol' => 'Discover Abilities Protocol',
         'adrianv2-self-audit'                 => 'Self-Audit (Plugin Health)',
         'adrianv2-rollback-build'             => 'Rollback Build',
-        'adrianv2-clonerlabs'              => 'ClonerLabs Import',
+        'adrianv2-clonerlabs'                 => 'ClonerLabs Import',
+        'adrianv2-live-edit'                  => 'Live-Edit (WPCode + Elementor)',
+        'adrianv2-framer-pipeline-import'     => 'Framer Pipeline → WordPress Deploy',
+        'adrianv2-site-clone-import'          => 'site-clone-to-v3 → WordPress Deploy',
+        'adrianv2-novamira-context-page'      => 'Novamira Context Page Setup',
     ];
 
     /**
@@ -80,10 +88,15 @@ final class Installer {
         'adrianv2-discover-abilities-protocol' => 'mixed',
         'adrianv2-self-audit'                 => 'mixed',
         'adrianv2-rollback-build'             => 'v4',
+        'adrianv2-clonerlabs'                 => 'mixed',
+        'adrianv2-live-edit'                  => 'mixed',
+        'adrianv2-framer-pipeline-import'     => 'v4',
+        'adrianv2-site-clone-import'          => 'mixed',
+        'adrianv2-novamira-context-page'      => 'mixed',
     ];
 
     /**
-     * Install all 8 skills. Idempotent — skips already-installed skills.
+     * Install all skills. Idempotent — updates existing, inserts new.
      *
      * @return array{ installed: string[], skipped: string[], errors: string[] }
      */
@@ -165,7 +178,7 @@ final class Installer {
             'post_content' => self::sanitize_skill_content($content),
             'post_status'  => 'publish',
             'meta_input'   => [
-                '_novamira_skill_source'       => 'novamira-adrianv2',
+                '_novamira_skill_source'        => 'novamira-adrianv2',
                 '_novamira_skill_elementor_ver' => self::SKILL_ELEMENTOR_VERSIONS[$slug] ?? 'mixed',
                 '_novamira_skill_visibility'    => 'admin-only',
             ],
@@ -185,15 +198,10 @@ final class Installer {
     /**
      * Sanitize skill markdown content for safe database storage.
      *
-     * Uses wp_kses_post to allow safe HTML/markdown while stripping
-     * dangerous tags. Does NOT strip PHP code examples inside markdown
-     * code blocks (they're harmless as stored content).
-     *
      * @param string $content Raw markdown content.
      * @return string
      */
     private static function sanitize_skill_content(string $content): string {
-        // Allow markdown/HTML through but strip dangerous tags.
         if (function_exists('wp_kses_post')) {
             return wp_kses_post($content);
         }
