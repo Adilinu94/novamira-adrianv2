@@ -139,10 +139,10 @@ class Plugin_Deploy
             ? $input['webhook_secret']
             : '';
 
-        $stored_secret = get_option(self::WEBHOOK_SECRET_OPTION, '');
+        $stored_secret = \get_option(self::WEBHOOK_SECRET_OPTION, '');
         if (empty($stored_secret)) {
             $stored_secret = bin2hex(random_bytes(32));
-            update_option(self::WEBHOOK_SECRET_OPTION, $stored_secret);
+            \update_option(self::WEBHOOK_SECRET_OPTION, $stored_secret);
         }
 
         if (empty($secret)) {
@@ -187,13 +187,13 @@ class Plugin_Deploy
         $zip_url = 'https://github.com/' . self::GITHUB_REPO . '/archive/refs/heads/' . self::GITHUB_BRANCH . '.zip';
         $tmp_zip = tempnam(sys_get_temp_dir(), 'plugin-deploy-') . '.zip';
 
-        $response = wp_remote_get($zip_url, [
+        $response = \wp_remote_get($zip_url, [
             'timeout'  => 60,
             'stream'   => true,
             'filename' => $tmp_zip,
         ]);
 
-        if (is_wp_error($response)) {
+        if (\is_wp_error($response)) {
             return [
                 'success' => false,
                 'data'    => ['message' => 'Download fehlgeschlagen: ' . $response->get_error_message()],
@@ -212,8 +212,11 @@ class Plugin_Deploy
         unlink($tmp_extract);
         mkdir($tmp_extract, 0755, true);
 
-        WP_Filesystem();
-        $result = unzip_file($tmp_zip, $tmp_extract);
+        if (!function_exists('\\WP_Filesystem')) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+        }
+        \WP_Filesystem();
+        $result = \unzip_file($tmp_zip, $tmp_extract);
 
         unlink($tmp_zip);
 
@@ -271,13 +274,13 @@ class Plugin_Deploy
     }
 }
 
-add_action('wp_abilities_api_init', [Plugin_Deploy::class, 'register']);
+\add_action('wp_abilities_api_init', [Plugin_Deploy::class, 'register']);
 
 // ─── REST-API: Deploy Webhook für GitHub ───────────────────────────────────
-add_action(
+\add_action(
     'rest_api_init',
     function () {
-        register_rest_route(
+        \register_rest_route(
             'novamira/v1',
             '/deploy-webhook',
             [
@@ -286,7 +289,7 @@ add_action(
                     $headers  = $request->get_headers();
                     $body     = $request->get_body();
 
-                    $stored_secret = get_option(Plugin_Deploy::WEBHOOK_SECRET_OPTION, '');
+                    $stored_secret = \get_option(Plugin_Deploy::WEBHOOK_SECRET_OPTION, '');
                     if (empty($stored_secret)) {
                         return new \WP_REST_Response([
                             'success' => false,
