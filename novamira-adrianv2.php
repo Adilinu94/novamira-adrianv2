@@ -279,29 +279,18 @@ add_action('network_admin_notices', 'novamira_adrianv2_render_dependency_notice'
 // Runtime bootstrap (plugins_loaded): load helpers, categories, abilities
 // -----------------------------------------------------------------------------
 
-require_once __DIR__ . '/includes/helpers/bootstrap.php';        require_once __DIR__ . '/includes/categories.php';
+require_once __DIR__ . '/includes/helpers/bootstrap.php';
+require_once __DIR__ . '/includes/categories.php';
 
-        // Phase 1 (1.1.0): Register V2 server-instructions filter for discover-abilities.
-        require_once __DIR__ . '/includes/integrations/server-instructions.php';
-        \Novamira\AdrianV2\Integrations\Server_Instructions::register();
+// Phase 1 (1.1.0): Register V2 server-instructions filter for discover-abilities.
+require_once __DIR__ . '/includes/integrations/server-instructions.php';
+\Novamira\AdrianV2\Integrations\Server_Instructions::register();
 
-        // Phase 1 (1.1.0): Schedule skill installation on 'init' (NOT here —
-        // wp_insert_post calls is_user_logged_in() via _count_posts_cache_key,
-        // which isn't available during plugins_loaded). Activation hook path
-        // is unaffected because it runs in wp-admin context where pluggable
-        // functions are already loaded.
-        add_action('init', 'novamira_adrianv2_install_skills_on_init', 20);
+// Phase 1 (1.1.0): Schedule skill installation on 'init' (NOT here —
+// wp_insert_post calls is_user_logged_in() via _count_posts_cache_key,
+// which isn't available during plugins_loaded). Activation hook path
+// is unaffected because it runs in wp-admin context where pluggable
+// functions are already loaded.
+add_action('init', 'novamira_adrianv2_install_skills_on_init', 20);
 
-        require_once __DIR__ . '/includes/bootstrap.php';
-er for discover-abilities.
-        require_once __DIR__ . '/includes/integrations/server-instructions.php';
-        \Novamira\AdrianV2\Integrations\Server_Instructions::register();
-
-        // Phase 1 (1.1.0): Schedule skill installation on 'init' (NOT here —
-        // wp_insert_post calls is_user_logged_in() via _count_posts_cache_key,
-        // which isn't available during plugins_loaded). Activation hook path
-        // is unaffected because it runs in wp-admin context where pluggable
-        // functions are already loaded.
-        add_action('init', 'novamira_adrianv2_install_skills_on_init', 20);
-
-        require_once __DIR__ . '/includes/bootstrap.php';
+require_once __DIR__ . '/includes/bootstrap.php';
