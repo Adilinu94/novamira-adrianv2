@@ -277,61 +277,64 @@ class Plugin_Deploy
 \add_action('wp_abilities_api_init', [Plugin_Deploy::class, 'register']);
 
 // ─── REST-API: Deploy Webhook für GitHub ───────────────────────────────────
-\add_action(
-    'rest_api_init',
-    function () {
-        \register_rest_route(
-            'novamira/v1',
-            '/deploy-webhook',
-            [
-                'methods'             => 'POST',
-                'callback'            => function (\WP_REST_Request $request) {
-                    $headers  = $request->get_headers();
-                    $body     = $request->get_body();
+// REST-Route sofort registrieren (rest_api_init feuert vor Plugin-Ladung).
+$register_webhook = function () {
+    \register_rest_route(
+        'novamira/v1',
+        '/deploy-webhook',
+        [
+            'methods'             => 'POST',
+            'callback'            => function (\WP_REST_Request $request) {
+                $headers  = $request->get_headers();
+                $body     = $request->get_body();
 
-                    $stored_secret = \get_option(Plugin_Deploy::WEBHOOK_SECRET_OPTION, '');
-                    if (empty($stored_secret)) {
-                        return new \WP_REST_Response([
-                            'success' => false,
-                            'message' => 'Kein Webhook-Secret konfiguriert. Rufe zuerst die plugin-deploy Ability auf.',
-                        ], 403);
-                    }
-
-                    $sig_header = $headers['x_hub_signature_256'][0] ?? '';
-                    if (empty($sig_header)) {
-                        return new \WP_REST_Response([
-                            'success' => false,
-                            'message' => 'Fehlende X-Hub-Signature-256.',
-                        ], 403);
-                    }
-
-                    $expected = 'sha256=' . hash_hmac('sha256', $body, $stored_secret);
-                    $actual   = explode('=', $sig_header, 2)[1] ?? '';
-
-                    if (!hash_equals($expected, $actual)) {
-                        return new \WP_REST_Response([
-                            'success' => false,
-                            'message' => 'Ungültige Signatur.',
-                        ], 403);
-                    }
-
-                    // Deploy via self::execute with webhook_secret.
-                    $result = Plugin_Deploy::execute([
-                        'dry_run'        => false,
-                        'webhook_secret' => $stored_secret,
-                    ]);
-
-                    $event = $request->get_header('X-GitHub-Event') ?: 'unknown';
-
+                $stored_secret = \get_option(Plugin_Deploy::WEBHOOK_SECRET_OPTION, '');
+                if (empty($stored_secret)) {
                     return new \WP_REST_Response([
-                        'success' => $result['success'],
-                        'event'   => $event,
-                        'message' => $result['data']['message'] ?? 'Deploy durchgeführt.',
-                        'details' => $result['data']['details'] ?? '',
-                    ], $result['success'] ? 200 : 500);
-                },
-                'permission_callback' => '__return_true',
-            ]
-        );
-    }
-);
+                        'success' => false,
+                        'message' => 'Kein Webhook-Secret konfiguriert. Rufe zuerst die plugin-deploy Ability auf.',
+                    ], 403);
+                }
+
+                $sig_header = $headers['x_hub_signature_256'][0] ?? '';
+                if (empty($sig_header)) {
+                    return new \WP_REST_Response([
+                        'success' => false,
+                        'message' => 'Fehlende X-Hub-Signature-256.',
+                    ], 403);
+                }
+
+                $expected = 'sha256=' . hash_hmac('sha256', $body, $stored_secret);
+                $actual   = explode('=', $sig_header, 2)[1] ?? '';
+
+                if (!hash_equals($expected, $actual)) {
+                    return new \WP_REST_Response([
+                        'success' => false,
+                        'message' => 'Ungültige Signatur.',
+                    ], 403);
+                }
+
+                $result = Plugin_Deploy::execute([
+                    'dry_run'        => false,
+                    'webhook_secret' => $stored_secret,
+                ]);
+
+                $event = $request->get_header('X-GitHub-Event') ?: 'unknown';
+
+                return new \WP_REST_Response([
+                    'success' => $result['success'],
+                    'event'   => $event,
+                    'message' => $result['data']['message'] ?? 'Deploy durchgeführt.',
+                    'details' => $result['data']['details'] ?? '',
+                ], $result['success'] ? 200 : 500);
+            },
+            'permission_callback' => '__return_true',
+        ]
+    );
+};
+
+if (\did_action('rest_api_init')) {
+    $register_webhook();
+} else {
+    \add_action('rest_api_init', $register_webhook);
+}
