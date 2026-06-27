@@ -422,7 +422,8 @@ final class V3_To_V4_Converter {
 		$element_id       = self::gen_id();
 		$desktop_props    = self::extract_style_props_for_widget( $s, $wt, $color_index );
 		$responsive       = self::extract_responsive_overrides( $s, $color_index );
-		$style_result     = self::build_and_apply_styles( $element_id, $desktop_props, $responsive, $new_settings['classes']['value'] );
+		$hover_props      = self::extract_hover_styles( $s, $color_index );
+		$style_result     = self::build_and_apply_styles( $element_id, $desktop_props, $responsive, $new_settings['classes']['value'], $hover_props );
 
 		return array(
 			'id'         => $element_id,
@@ -744,6 +745,25 @@ final class V3_To_V4_Converter {
 		if ( ! empty( $v3_settings['background_image'] ) && is_array( $v3_settings['background_image'] ) && ! empty( $v3_settings['background_image']['url'] ) ) {
 			$props['background-image'] = self::v4_string( 'url(' . esc_url( $v3_settings['background_image']['url'] ) . ')' );
 		}
+		// Gradient background.
+		$bg_type = $v3_settings['background_background'] ?? '';
+		if ( 'gradient' === $bg_type ) {
+			$grad_first = $v3_settings['background_gradient_first_color'] ?? '';
+			$grad_second = $v3_settings['background_gradient_second_color'] ?? '';
+			$grad_angle = $v3_settings['background_gradient_angle'] ?? 180;
+			if ( ! empty( $grad_first ) || ! empty( $grad_second ) ) {
+				$angle = is_numeric( $grad_angle ) ? (float) $grad_angle . 'deg' : '180deg';
+				$c1 = self::resolve_color_var( $grad_first, $ci );
+				$c2 = self::resolve_color_var( $grad_second, $ci ) ?: $c1;
+				if ( ! str_starts_with( $grad_first, 'var(' ) && str_starts_with( $c1, 'e-gv-' ) ) {
+					$c1 = "var(--$c1)";
+				}
+				if ( ! str_starts_with( $grad_second, 'var(' ) && str_starts_with( $c2, 'e-gv-' ) ) {
+					$c2 = "var(--$c2)";
+				}
+				$props['background-image'] = self::v4_string( "linear-gradient({$angle}, {$c1}, {$c2})" );
+			}
+		}
 		if ( ! empty( $v3_settings['background_position'] ) && is_string( $v3_settings['background_position'] ) ) {
 			$props['background-position'] = self::v4_string( $v3_settings['background_position'] );
 		}
@@ -752,6 +772,25 @@ final class V3_To_V4_Converter {
 		}
 		if ( ! empty( $v3_settings['background_size'] ) && is_string( $v3_settings['background_size'] ) ) {
 			$props['background-size'] = self::v4_string( $v3_settings['background_size'] );
+		}
+		// Background overlay (V3 uses background_overlay_background + color).
+		$overlay_type = $v3_settings['background_overlay_background'] ?? '';
+		if ( 'classic' === $overlay_type && ! empty( $v3_settings['background_overlay_color'] ) ) {
+			$overlay = self::resolve_color_var( $v3_settings['background_overlay_color'], $ci );
+			$overlay = str_starts_with( $overlay, 'e-gv-' ) ? "var(--$overlay)" : $overlay;
+			$props['background-image'] = self::v4_string( "linear-gradient({$overlay}, {$overlay})" );
+		} elseif ( 'gradient' === $overlay_type ) {
+			$og_first = $v3_settings['background_overlay_gradient_first_color'] ?? '';
+			$og_second = $v3_settings['background_overlay_gradient_second_color'] ?? '';
+			$og_angle = $v3_settings['background_overlay_gradient_angle'] ?? 180;
+			if ( ! empty( $og_first ) || ! empty( $og_second ) ) {
+				$angle = is_numeric( $og_angle ) ? (float) $og_angle . 'deg' : '180deg';
+				$c1 = self::resolve_color_var( $og_first, $ci );
+				$c2 = self::resolve_color_var( $og_second, $ci ) ?: $c1;
+				if ( ! str_starts_with( $og_first, 'var(' ) && str_starts_with( $c1, 'e-gv-' ) ) { $c1 = "var(--$c1)"; }
+				if ( ! str_starts_with( $og_second, 'var(' ) && str_starts_with( $c2, 'e-gv-' ) ) { $c2 = "var(--$c2)"; }
+				$props['background-image'] = self::v4_string( "linear-gradient({$angle}, {$c1}, {$c2})" );
+			}
 		}
 
 		// ── Border (generic, for containers) ──
@@ -958,6 +997,82 @@ final class V3_To_V4_Converter {
 	}
 
 	/**
+	 * Extract hover-state CSS props from V3 settings.
+	 *
+	 * V3 stores hover styles with a hover_ prefix (e.g. hover_background_color)
+	 * for containers/sections and button_hover_ prefix for buttons.
+	 *
+	 * @param array $v3_settings V3 element settings.
+	 * @param array $ci          Color index.
+	 * @return array V4 $$type-wrapped hover props.
+	 */
+	public static function extract_hover_styles( array $v3_settings, array $ci ): array {
+		$hover = array();
+
+		// Container/section hover: background, border, box-shadow.
+		if ( ! empty( $v3_settings['hover_background_color'] ) && is_string( $v3_settings['hover_background_color'] ) ) {
+			$hover['background-color'] = self::v4_color( self::resolve_color_var( $v3_settings['hover_background_color'], $ci ) );
+		}
+		if ( ! empty( $v3_settings['hover_border_border'] ) && is_string( $v3_settings['hover_border_border'] ) ) {
+			$hover['border-style'] = self::v4_string( $v3_settings['hover_border_border'] );
+		}
+		if ( ! empty( $v3_settings['hover_border_color'] ) ) {
+			$hover['border-color'] = self::v4_color( self::resolve_color_var( $v3_settings['hover_border_color'], $ci ) );
+		}
+		if ( ! empty( $v3_settings['hover_border_width'] ) && is_array( $v3_settings['hover_border_width'] ) ) {
+			$bw = $v3_settings['hover_border_width'];
+			$unit = $bw['unit'] ?? 'px';
+			$hover['border-width'] = self::v4_string(
+				( $bw['top'] ?? '0' ) . $unit . ' ' .
+				( $bw['right'] ?? '0' ) . $unit . ' ' .
+				( $bw['bottom'] ?? '0' ) . $unit . ' ' .
+				( $bw['left'] ?? '0' ) . $unit
+			);
+		}
+
+		// Button hover: background, text color, border.
+		if ( ! empty( $v3_settings['button_hover_background_color'] ) ) {
+			$hover['background-color'] = self::v4_color( self::resolve_color_var( $v3_settings['button_hover_background_color'], $ci ) );
+		}
+		if ( ! empty( $v3_settings['button_hover_color'] ) ) {
+			$hover['color'] = self::v4_color( self::resolve_color_var( $v3_settings['button_hover_color'], $ci ) );
+		}
+		if ( ! empty( $v3_settings['button_hover_border_color'] ) ) {
+			$hover['border-color'] = self::v4_color( self::resolve_color_var( $v3_settings['button_hover_border_color'], $ci ) );
+		}
+
+		// Box shadow on hover.
+		if ( ! empty( $v3_settings['hover_box_shadow_box_shadow_type'] ) && 'yes' === $v3_settings['hover_box_shadow_box_shadow_type'] ) {
+			$bs = $v3_settings['hover_box_shadow_box_shadow'] ?? array();
+			if ( ! empty( $bs ) ) {
+				$h  = $bs['horizontal'] ?? 0;
+				$v  = $bs['vertical'] ?? 0;
+				$bl = $bs['blur'] ?? 0;
+				$sp = $bs['spread'] ?? 0;
+				$cl = $bs['color'] ?? 'rgba(0,0,0,0.5)';
+				$inset = ! empty( $bs['position'] ) && 'inset' === $bs['position'] ? 'inset ' : '';
+				$hover['box-shadow'] = self::v4_string( $inset . "{$h}px {$v}px {$bl}px {$sp}px " . $cl );
+			}
+		}
+
+		// Box shadow on button hover.
+		if ( ! empty( $v3_settings['button_hover_box_shadow_box_shadow_type'] ) && 'yes' === $v3_settings['button_hover_box_shadow_box_shadow_type'] ) {
+			$bs = $v3_settings['button_hover_box_shadow_box_shadow'] ?? array();
+			if ( ! empty( $bs ) ) {
+				$h  = $bs['horizontal'] ?? 0;
+				$v  = $bs['vertical'] ?? 0;
+				$bl = $bs['blur'] ?? 0;
+				$sp = $bs['spread'] ?? 0;
+				$cl = $bs['color'] ?? 'rgba(0,0,0,0.5)';
+				$inset = ! empty( $bs['position'] ) && 'inset' === $bs['position'] ? 'inset ' : '';
+				$hover['box-shadow'] = self::v4_string( $inset . "{$h}px {$v}px {$bl}px {$sp}px " . $cl );
+			}
+		}
+
+		return $hover;
+	}
+
+	/**
 	 * Build V4 style variants from desktop props and responsive overrides,
 	 * then create a local style class and apply it to the element.
 	 *
@@ -967,13 +1082,15 @@ final class V3_To_V4_Converter {
 	 * @param array    $desktop_props        V4 $$type-wrapped desktop props.
 	 * @param array    $responsive_overrides {tablet: [...], mobile: [...]}.
 	 * @param string[] $existing_class_ids   Already-assigned global class IDs.
+	 * @param array    $hover_props          V4 $$type-wrapped hover-state props.
 	 * @return array {settings: [...], styles: [...], class_ids: [...]}
 	 */
 	public static function build_and_apply_styles(
 		string $element_id,
 		array $desktop_props,
 		array $responsive_overrides,
-		array $existing_class_ids = []
+		array $existing_class_ids = [],
+		array $hover_props = []
 	): array {
 		// If no style props at all, return empty.
 		if ( empty( $desktop_props ) && empty( $responsive_overrides ) ) {
@@ -1010,6 +1127,14 @@ final class V3_To_V4_Converter {
 			$variants[] = array(
 				'meta'       => array( 'breakpoint' => 'mobile', 'state' => null ),
 				'props'      => $responsive_overrides['mobile'],
+				'custom_css' => null,
+			);
+		}
+
+		if ( ! empty( $hover_props ) ) {
+			$variants[] = array(
+				'meta'       => array( 'breakpoint' => 'desktop', 'state' => 'hover' ),
+				'props'      => $hover_props,
 				'custom_css' => null,
 			);
 		}
@@ -1182,7 +1307,8 @@ final class V3_To_V4_Converter {
 
 		// Build and apply styles.
 		$existing_class_ids = $existing['classes']['value'] ?? array();
-		$style_result = self::build_and_apply_styles( $element_id, $desktop_props, $responsive, $existing_class_ids );
+		$hover_props = self::extract_hover_styles( $v3_settings, $ci );
+		$style_result = self::build_and_apply_styles( $element_id, $desktop_props, $responsive, $existing_class_ids, $hover_props );
 
 		// Merge the updated classes into existing settings.
 		$settings = $existing;
