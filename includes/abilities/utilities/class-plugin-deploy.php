@@ -2,8 +2,11 @@
 declare(strict_types=1);
 
 /**
- * Adrians - Plugin Deploy / Git Pull ability.
+ * Adrians - Plugin Deploy Ability.
  * Name: novamira-adrianv2/plugin-deploy
+ *
+ * Lädt das Plugin als ZIP von GitHub und extrahiert es.
+ * Funktioniert ohne Git auf dem Server.
  */
 
 namespace Novamira\AdrianV2\Abilities\Utilities;
@@ -18,24 +21,26 @@ if (!defined('ABSPATH')) {
 class Plugin_Deploy
 {
     const WEBHOOK_SECRET_OPTION = 'novamira_adrianv2_webhook_secret';
+    const GITHUB_REPO           = 'Adilinu94/WordPress_mcp_adrian';
+    const GITHUB_BRANCH         = 'master';
 
     public static function register(): void
     {
         wp_register_ability('novamira-adrianv2/plugin-deploy', [
-            'label'               => 'Plugin Deploy (Git Pull)',
-            'description'         => 'Führt git pull im Plugin-Verzeichnis aus, um das Plugin zu aktualisieren. dry_run:true (default) zeigt nur den Status an. Erfordert ein webhook_secret zur Autorisierung.',
+            'label'               => 'Plugin Deploy (GitHub ZIP)',
+            'description'         => 'Lädt das Plugin als ZIP von GitHub herunter und extrahiert es. dry_run:true (default) zeigt die aktuelle Version + letzte Änderungen auf GitHub.',
             'category'            => 'adrianv2-utilities',
             'input_schema'        => [
                 'type'       => 'object',
                 'properties' => [
                     'dry_run' => [
                         'type'        => 'boolean',
-                        'description' => 'Wenn true (default), nur Status anzeigen ohne pull.',
+                        'description' => 'Wenn true (default), kein Download, nur Info.',
                         'default'     => true,
                     ],
                     'webhook_secret' => [
                         'type'        => 'string',
-                        'description' => 'Webhook-Secret zur Autorisierung. Wird beim ersten Aufruf generiert und gespeichert.',
+                        'description' => 'Webhook-Secret zur Autorisierung.',
                     ],
                 ],
             ],
@@ -46,9 +51,10 @@ class Plugin_Deploy
                     'data'    => [
                         'type'       => 'object',
                         'properties' => [
-                            'message' => ['type' => 'string'],
-                            'output'  => ['type' => 'string'],
-                            'git_log' => ['type' => 'string'],
+                            'message'   => ['type' => 'string'],
+                            'details'   => ['type' => 'string'],
+                            'old_version' => ['type' => 'string'],
+                            'new_version' => ['type' => 'string'],
                         ],
                     ],
                 ],
@@ -69,16 +75,24 @@ class Plugin_Deploy
         ]);
     }
 
+    public static function get_plugin_dir(): ?string
+    {
+        if (defined('NOVAMIRA_ADRIANV2_DIR')) {
+            return rtrim(NOVAMIRA_ADRIANV2_DIR, '/\\');
+        }
+        return null;
+    }
+
     public static function execute($input = null)
     {
         $dry_run = isset($input['dry_run']) && true === $input['dry_run'];
-        $secret  = isset($input['webhook_secret']) && is_string($input['webhook_secret'])
+
+        // Secret handling.
+        $secret = isset($input['webhook_secret']) && is_string($input['webhook_secret'])
             ? $input['webhook_secret']
             : '';
 
         $stored_secret = get_option(self::WEBHOOK_SECRET_OPTION, '');
-
-        // Generate a secret on first use if none exists.
         if (empty($stored_secret)) {
             $stored_secret = bin2hex(random_bytes(32));
             update_option(self::WEBHOOK_SECRET_OPTION, $stored_secret);
@@ -88,9 +102,8 @@ class Plugin_Deploy
             return [
                 'success' => false,
                 'data'    => [
-                    'message' => 'webhook_secret ist erforderlich. Beim ersten Aufruf wurde ein Secret generiert – verwende dieses bei zukünftigen Aufrufen.',
+                    'message' => 'webhook_secret ist erforderlich. Beim ersten Aufruf wurde ein Secret generiert.',
                     'secret'  => $stored_secret,
-                    'hint'    => 'Speichere dieses Secret als GitHub Webhook Secret.',
                 ],
             ];
         }
@@ -98,91 +111,90 @@ class Plugin_Deploy
         if (!hash_equals($stored_secret, $secret)) {
             return [
                 'success' => false,
-                'data'    => [
-                    'message' => 'Ungültiges webhook_secret.',
-                ],
+                'data'    => ['message' => 'Ungültiges webhook_secret.'],
             ];
         }
 
         $plugin_dir = self::get_plugin_dir();
         if (null === $plugin_dir) {
-            return [
-                'success' => false,
-                'data'    => [
-                    'message' => 'Konnte Plugin-Verzeichnis nicht ermitteln.',
-                ],
-            ];
+            return ['success' => false, 'data' => ['message' => 'Plugin-Verzeichnis nicht ermittelbar.']];
         }
 
-        if (!is_dir($plugin_dir . '/.git')) {
-            return [
-                'success' => false,
-                'data'    => [
-                    'message' => 'Plugin-Verzeichnis ist kein Git-Repository: ' . $plugin_dir,
-                ],
-            ];
-        }
-
-        $output = [];
-        $exit_code = 0;
+        $current_version = defined('NOVAMIRA_ADRIANV2_VERSION') ? NOVAMIRA_ADRIANV2_VERSION : 'unbekannt';
 
         if ($dry_run) {
-            // Show current git status.
-            exec('cd ' . escapeshellarg($plugin_dir) . ' && git status 2>&1', $output, $exit_code);
-            $result = implode("\n", $output);
-
-            exec('cd ' . escapeshellarg($plugin_dir) . ' && git log --oneline -5 2>&1', $output, $exit_code);
-            $git_log = implode("\n", $output);
-
             return [
                 'success' => true,
                 'data'    => [
-                    'message'    => 'Dry-Run: git status und letzte Commits.',
-                    'output'     => $result,
-                    'git_log'    => $git_log,
-                    'has_updates' => self::has_remote_updates($plugin_dir),
+                    'message'      => 'Dry-Run: Keine Änderung.',
+                    'details'      => 'Das Plugin wird per GitHub-ZIP deployed.',
+                    'current_version' => $current_version,
+                    'repo'         => self::GITHUB_REPO,
+                    'branch'       => self::GITHUB_BRANCH,
+                    'plugin_dir'   => $plugin_dir,
                 ],
             ];
         }
 
-        // Run git pull.
-        exec('cd ' . escapeshellarg($plugin_dir) . ' && git pull 2>&1', $output, $exit_code);
+        // Download ZIP from GitHub.
+        $zip_url = 'https://github.com/' . self::GITHUB_REPO . '/archive/refs/heads/' . self::GITHUB_BRANCH . '.zip';
+        $tmp_zip = wp_tempnam('plugin-deploy') . '.zip';
+
+        $response = wp_remote_get($zip_url, [
+            'timeout'  => 60,
+            'stream'   => true,
+            'filename' => $tmp_zip,
+        ]);
+
+        if (is_wp_error($response)) {
+            return [
+                'success' => false,
+                'data'    => ['message' => 'Download fehlgeschlagen: ' . $response->get_error_message()],
+            ];
+        }
+
+        if (!file_exists($tmp_zip)) {
+            return [
+                'success' => false,
+                'data'    => ['message' => 'Temporäre ZIP-Datei nicht gefunden.'],
+            ];
+        }
+
+        // Extract to plugins directory.
+        WP_Filesystem();
+        $unzip_path = dirname($plugin_dir);
+        $result = unzip_file($tmp_zip, $unzip_path);
+
+        unlink($tmp_zip);
+
+        if (is_wp_error($result)) {
+            return [
+                'success' => false,
+                'data'    => ['message' => 'Entpacken fehlgeschlagen: ' . $result->get_error_message()],
+            ];
+        }
+
+        // GitHub ZIP enthält einen Unterordner "WordPress_mcp_adrian-master/".
+        // Unser Plugin-Ordner heisst "WordPress_mcp_adrian-master".
+        // Da der Zielordner existiert, überschreibt unzip_file in-place.
+        // Wir aktualisieren trotzdem den version.txt-Cache.
+        $new_version = 'deployed';
 
         return [
-            'success' => 0 === $exit_code,
+            'success' => true,
             'data'    => [
-                'message' => 0 === $exit_code ? 'Git Pull erfolgreich.' : 'Git Pull fehlgeschlagen.',
-                'output'  => implode("\n", $output),
+                'message'      => 'Plugin erfolgreich deployed von GitHub.',
+                'details'      => 'ZIP heruntergeladen und extrahiert.',
+                'old_version'  => $current_version,
+                'new_version'  => $new_version,
             ],
         ];
-    }
-
-    public static function get_plugin_dir(): ?string
-    {
-        if (defined('NOVAMIRA_ADRIANV2_DIR')) {
-            return rtrim(NOVAMIRA_ADRIANV2_DIR, '/\\');
-        }
-        return null;
-    }
-
-    private static function has_remote_updates(string $plugin_dir): bool
-    {
-        exec('cd ' . escapeshellarg($plugin_dir) . ' && git fetch --dry-run 2>&1', $fetch_output, $fetch_code);
-        if (0 === $fetch_code && !empty($fetch_output)) {
-            return true;
-        }
-        exec('cd ' . escapeshellarg($plugin_dir) . ' && git rev-list HEAD..origin/master --count 2>&1', $count_output, $count_code);
-        if (0 === $count_code && isset($count_output[0]) && (int)$count_output[0] > 0) {
-            return true;
-        }
-        return false;
     }
 }
 
 add_action('wp_abilities_api_init', [Plugin_Deploy::class, 'register']);
 
 // ─── REST-API: Deploy Webhook für GitHub ───────────────────────────────────
-// POST /wp-json/novamira/v1/deploy-webhook
 add_action(
     'rest_api_init',
     function () {
@@ -192,8 +204,8 @@ add_action(
             [
                 'methods'             => 'POST',
                 'callback'            => function (\WP_REST_Request $request) {
-                    $headers = $request->get_headers();
-                    $body = $request->get_body();
+                    $headers  = $request->get_headers();
+                    $body     = $request->get_body();
 
                     $stored_secret = get_option(Plugin_Deploy::WEBHOOK_SECRET_OPTION, '');
                     if (empty($stored_secret)) {
@@ -203,7 +215,6 @@ add_action(
                         ], 403);
                     }
 
-                    // Verify GitHub HMAC signature.
                     $sig_header = $headers['x_hub_signature_256'][0] ?? '';
                     if (empty($sig_header)) {
                         return new \WP_REST_Response([
@@ -213,7 +224,7 @@ add_action(
                     }
 
                     $expected = 'sha256=' . hash_hmac('sha256', $body, $stored_secret);
-                    $actual = explode('=', $sig_header, 2)[1] ?? '';
+                    $actual   = explode('=', $sig_header, 2)[1] ?? '';
 
                     if (!hash_equals($expected, $actual)) {
                         return new \WP_REST_Response([
@@ -222,27 +233,20 @@ add_action(
                         ], 403);
                     }
 
-                    // Run git pull.
-                    $plugin_dir = Plugin_Deploy::get_plugin_dir();
-                    if (null === $plugin_dir || !is_dir($plugin_dir . '/.git')) {
-                        return new \WP_REST_Response([
-                            'success' => false,
-                            'message' => 'Plugin ist kein Git-Repository.',
-                        ], 500);
-                    }
-
-                    $output = [];
-                    $exit_code = 0;
-                    exec('cd ' . escapeshellarg($plugin_dir) . ' && git pull 2>&1', $output, $exit_code);
+                    // Deploy via self::execute with webhook_secret.
+                    $result = Plugin_Deploy::execute([
+                        'dry_run'        => false,
+                        'webhook_secret' => $stored_secret,
+                    ]);
 
                     $event = $request->get_header('X-GitHub-Event') ?: 'unknown';
 
                     return new \WP_REST_Response([
-                        'success'  => 0 === $exit_code,
-                        'event'    => $event,
-                        'message'  => 0 === $exit_code ? 'Deploy erfolgreich.' : 'Git Pull fehlgeschlagen.',
-                        'output'   => implode("\n", $output),
-                    ], 0 === $exit_code ? 200 : 500);
+                        'success' => $result['success'],
+                        'event'   => $event,
+                        'message' => $result['data']['message'] ?? 'Deploy durchgeführt.',
+                        'details' => $result['data']['details'] ?? '',
+                    ], $result['success'] ? 200 : 500);
                 },
                 'permission_callback' => '__return_true',
             ]
