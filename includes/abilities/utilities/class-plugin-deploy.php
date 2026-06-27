@@ -304,7 +304,7 @@ $register_webhook = function () {
                     ], 403);
                 }
 
-                $expected = 'sha256=' . hash_hmac('sha256', $body, $stored_secret);
+                $expected = hash_hmac('sha256', $body, $stored_secret);
                 $actual   = explode('=', $sig_header, 2)[1] ?? '';
 
                 if (!hash_equals($expected, $actual)) {
