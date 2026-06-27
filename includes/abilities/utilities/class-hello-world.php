@@ -20,8 +20,8 @@ class Hello_World
     public static function register(): void
     {
         wp_register_ability('novamira-adrianv2/greet', [
-            'label'               => 'Hello World Greet',
-            'description'         => 'Returns a greeting message. Accepts an optional name parameter.',
+            'label'               => 'Hello World Greet (Legacy)',
+            'description'         => 'DEPRECATED: This is a duplicate of novamira/adrians-greet from the base Novamira plugin. Use the base version instead. Returns a greeting message. Accepts an optional name parameter.',
             'category'            => 'adrianv2-utilities',
             'input_schema'        => [
                 'type'       => 'object',

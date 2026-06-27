@@ -57,7 +57,7 @@ class Design_Repair
         // 1. zero-container-padding
         wp_register_ability('novamira-adrianv2/zero-container-padding', [
             'label'       => 'Zero Container Padding',
-            'description' => 'Recursively sets container padding to zero in a subtree. Useful for removing inherited padding before applying a fresh spacing system. Note: operates on V3-style settings (_padding, padding); V4-style styles arrays are not modified.',
+            'description' => 'Recursively sets container padding to zero in a subtree. Useful for removing inherited padding before applying a fresh spacing system. Supports flat settings (V3 + V4 containers). For V4 atomic elements using the local style classes map (element.styles), use the V4 Atomic Build pipeline instead.',
             'category'    => 'adrianv2-design-utilities',
             'input_schema' => [
                 'type'       => 'object',
@@ -86,7 +86,7 @@ class Design_Repair
         // 2. reset-negative-margins
         wp_register_ability('novamira-adrianv2/reset-negative-margins', [
             'label'       => 'Reset Negative Margins',
-            'description' => 'Recursively clamps negative margins to 0 for widgets and/or containers in a subtree. Handles desktop, tablet, and mobile margin variants. Note: operates on V3-style settings.',
+            'description' => 'Recursively clamps negative margins to 0 for widgets and/or containers in a subtree. Handles desktop, tablet, and mobile margin variants. Supports flat settings (V3 + V4 containers). V4 local style class margins (element.styles) must be managed via the V4 Atomic Build pipeline.',
             'category'    => 'adrianv2-design-utilities',
             'input_schema' => [
                 'type'       => 'object',
@@ -180,7 +180,7 @@ class Design_Repair
         // 5. apply-text-hierarchy
         wp_register_ability('novamira-adrianv2/apply-text-hierarchy', [
             'label'       => 'Apply Text Hierarchy',
-            'description' => 'Applies consistent heading, body, and button typography styles across a page subtree. Note: operates on V3-style settings typography fields.',
+            'description' => 'Applies consistent heading, body, and button typography styles across a page subtree. Targets flat typography settings (V3 + V4 containers). For V4 atomic widgets (e-heading, e-paragraph, e-button) with local style classes, use the V4 Atomic Build pipeline.',
             'category'    => 'adrianv2-design-utilities',
             'input_schema' => [
                 'type'       => 'object',
@@ -212,7 +212,7 @@ class Design_Repair
         // 6. normalize-responsive-values
         wp_register_ability('novamira-adrianv2/normalize-responsive-values', [
             'label'       => 'Normalize Responsive Values',
-            'description' => 'Calculates and sets missing tablet/mobile values from desktop values using configurable scaling factors for width, padding, and font size. Note: operates on V3-style settings.',
+            'description' => 'Calculates and sets missing tablet/mobile values from desktop values using configurable scaling factors for width, padding, and font size. Operates on flat responsive settings (V3 + V4 containers). V4 local style class responsive variants must be managed via the V4 Atomic Build pipeline.',
             'category'    => 'adrianv2-design-utilities',
             'input_schema' => [
                 'type'       => 'object',
@@ -331,7 +331,7 @@ class Design_Repair
         // 10. fix-gap-rhythm
         wp_register_ability('novamira-adrianv2/fix-gap-rhythm', [
             'label'       => 'Fix Gap Rhythm',
-            'description' => 'Scans for inconsistent gap/spacing values between structurally similar sections and standardizes them to the dominant value. Note: operates on V3-style settings.',
+            'description' => 'Scans for inconsistent gap/spacing values between structurally similar sections and standardizes them to the dominant value. Operates on flat gap settings (V3 + V4 containers). V4 local style class gap props must be managed via the V4 Atomic Build pipeline.',
             'category'    => 'adrianv2-design-utilities',
             'input_schema' => [
                 'type'       => 'object',

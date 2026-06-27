@@ -13,7 +13,7 @@ class Convert_Kit_To_V4
     {
         wp_register_ability('novamira-adrianv2/convert-kit-to-v4', [
             'label'               => 'Convert Kit v3 to v4 (Legacy)',
-            'description'         => 'DEPRECATED: Superseded by novamira/adrians-kit-convert-v3-to-v4 which provides full 4-phase orchestration with e_global_class post type support and responsive variants. This ability is kept for reference only.',
+            'description'         => 'DEPRECATED: Superseded by novamira-adrianv2/kit-convert-v3-to-v4 which provides full 4-phase orchestration with e_global_class post type support and responsive variants. This ability is kept for reference only.',
             'category'            => 'novamira-adrianv2',
             'input_schema'        => ['type' => 'object', 'properties' => []],
             'output_schema'       => ['type' => 'object'],
@@ -31,7 +31,7 @@ class Convert_Kit_To_V4
     {
         return [
             'deprecated' => true,
-            'message'    => 'This ability is superseded. Use novamira/adrians-kit-convert-v3-to-v4 for the full 4-phase orchestration with e_global_class post type support and responsive variants.',
+            'message'    => 'This ability is superseded. Use novamira-adrianv2/kit-convert-v3-to-v4 for the full 4-phase orchestration with e_global_class post type support and responsive variants.',
         ];
     }
 }
