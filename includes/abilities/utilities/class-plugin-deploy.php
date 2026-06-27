@@ -83,6 +83,53 @@ class Plugin_Deploy
         return null;
     }
 
+    private static function rrmdir(string $dir): void
+    {
+        if (!is_dir($dir)) {
+            return;
+        }
+        $items = scandir($dir);
+        foreach ($items as $item) {
+            if ('.' === $item || '..' === $item) {
+                continue;
+            }
+            $path = $dir . DIRECTORY_SEPARATOR . $item;
+            if (is_dir($path)) {
+                self::rrmdir($path);
+            } else {
+                unlink($path);
+            }
+        }
+        rmdir($dir);
+    }
+
+    private static function copy_overwrite(string $src, string $dst): bool
+    {
+        if (!is_dir($src)) {
+            return false;
+        }
+        if (!is_dir($dst)) {
+            mkdir($dst, 0755, true);
+        }
+        $items = scandir($src);
+        foreach ($items as $item) {
+            if ('.' === $item || '..' === $item) {
+                continue;
+            }
+            $s = $src . DIRECTORY_SEPARATOR . $item;
+            $d = $dst . DIRECTORY_SEPARATOR . $item;
+            if (is_dir($s)) {
+                self::rrmdir($d);
+                if (!self::copy_overwrite($s, $d)) {
+                    return false;
+                }
+            } else {
+                copy($s, $d);
+            }
+        }
+        return true;
+    }
+
     public static function execute($input = null)
     {
         $dry_run = isset($input['dry_run']) && true === $input['dry_run'];
@@ -138,7 +185,7 @@ class Plugin_Deploy
 
         // Download ZIP from GitHub.
         $zip_url = 'https://github.com/' . self::GITHUB_REPO . '/archive/refs/heads/' . self::GITHUB_BRANCH . '.zip';
-        $tmp_zip = wp_tempnam('plugin-deploy') . '.zip';
+        $tmp_zip = tempnam(sys_get_temp_dir(), 'plugin-deploy-') . '.zip';
 
         $response = wp_remote_get($zip_url, [
             'timeout'  => 60,
@@ -160,25 +207,57 @@ class Plugin_Deploy
             ];
         }
 
-        // Extract to plugins directory.
+        // Extract to a temp directory first.
+        $tmp_extract = tempnam(sys_get_temp_dir(), 'plugin-extract-');
+        unlink($tmp_extract);
+        mkdir($tmp_extract, 0755, true);
+
         WP_Filesystem();
-        $unzip_path = dirname($plugin_dir);
-        $result = unzip_file($tmp_zip, $unzip_path);
+        $result = unzip_file($tmp_zip, $tmp_extract);
 
         unlink($tmp_zip);
 
         if (is_wp_error($result)) {
+            self::rrmdir($tmp_extract);
             return [
                 'success' => false,
                 'data'    => ['message' => 'Entpacken fehlgeschlagen: ' . $result->get_error_message()],
             ];
         }
 
-        // GitHub ZIP enthält einen Unterordner "WordPress_mcp_adrian-master/".
-        // Unser Plugin-Ordner heisst "WordPress_mcp_adrian-master".
-        // Da der Zielordner existiert, überschreibt unzip_file in-place.
-        // Wir aktualisieren trotzdem den version.txt-Cache.
-        $new_version = 'deployed';
+        // GitHub ZIP enthält z.B. "WordPress_mcp_adrian-master/" als Root.
+        $entries = scandir($tmp_extract);
+        $extracted_dir = null;
+        foreach ($entries as $entry) {
+            if ('.' === $entry || '..' === $entry) {
+                continue;
+            }
+            if (is_dir($tmp_extract . DIRECTORY_SEPARATOR . $entry)) {
+                $extracted_dir = $tmp_extract . DIRECTORY_SEPARATOR . $entry;
+                break;
+            }
+        }
+
+        if (null === $extracted_dir || !is_dir($extracted_dir)) {
+            self::rrmdir($tmp_extract);
+            return [
+                'success' => false,
+                'data'    => ['message' => 'Kein Plugin-Ordner im ZIP gefunden.'],
+            ];
+        }
+
+        // Dateien aus dem extrahierten Ordner in den aktiven Plugin-Ordner kopieren.
+        $result = self::copy_overwrite($extracted_dir, $plugin_dir);
+
+        // Temp aufräumen.
+        self::rrmdir($tmp_extract);
+
+        if (!$result) {
+            return [
+                'success' => false,
+                'data'    => ['message' => 'Kopieren der Plugin-Dateien fehlgeschlagen.'],
+            ];
+        }
 
         return [
             'success' => true,
@@ -186,7 +265,7 @@ class Plugin_Deploy
                 'message'      => 'Plugin erfolgreich deployed von GitHub.',
                 'details'      => 'ZIP heruntergeladen und extrahiert.',
                 'old_version'  => $current_version,
-                'new_version'  => $new_version,
+                'new_version'  => 'deployed',
             ],
         ];
     }
