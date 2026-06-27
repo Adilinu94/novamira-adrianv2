@@ -774,11 +774,21 @@ final class V3_To_V4_Converter {
 			$props['background-size'] = self::v4_string( $v3_settings['background_size'] );
 		}
 		// Background overlay (V3 uses background_overlay_background + color).
+		// Must be layered ON TOP of existing background-image (multi-background CSS).
 		$overlay_type = $v3_settings['background_overlay_background'] ?? '';
+		$overlay_opacity = $v3_settings['background_overlay_opacity'] ?? null;
+		$overlay_blend = $v3_settings['background_overlay_blend_mode'] ?? '';
+		$existing_bg_image = $props['background-image'] ?? null;
+		$overlay_gradient = '';
+
 		if ( 'classic' === $overlay_type && ! empty( $v3_settings['background_overlay_color'] ) ) {
 			$overlay = self::resolve_color_var( $v3_settings['background_overlay_color'], $ci );
-			$overlay = str_starts_with( $overlay, 'e-gv-' ) ? "var(--$overlay)" : $overlay;
-			$props['background-image'] = self::v4_string( "linear-gradient({$overlay}, {$overlay})" );
+			if ( str_starts_with( $overlay, 'e-gv-' ) ) {
+				$overlay = "var(--$overlay)";
+			} elseif ( is_numeric( $overlay_opacity ) && (float) $overlay_opacity < 1.0 ) {
+				$overlay = self::hex_to_rgba( $overlay, (float) $overlay_opacity );
+			}
+			$overlay_gradient = "linear-gradient({$overlay}, {$overlay})";
 		} elseif ( 'gradient' === $overlay_type ) {
 			$og_first = $v3_settings['background_overlay_gradient_first_color'] ?? '';
 			$og_second = $v3_settings['background_overlay_gradient_second_color'] ?? '';
@@ -789,7 +799,19 @@ final class V3_To_V4_Converter {
 				$c2 = self::resolve_color_var( $og_second, $ci ) ?: $c1;
 				if ( ! str_starts_with( $og_first, 'var(' ) && str_starts_with( $c1, 'e-gv-' ) ) { $c1 = "var(--$c1)"; }
 				if ( ! str_starts_with( $og_second, 'var(' ) && str_starts_with( $c2, 'e-gv-' ) ) { $c2 = "var(--$c2)"; }
-				$props['background-image'] = self::v4_string( "linear-gradient({$angle}, {$c1}, {$c2})" );
+				$overlay_gradient = "linear-gradient({$angle}, {$c1}, {$c2})";
+			}
+		}
+
+		if ( ! empty( $overlay_gradient ) ) {
+			if ( $existing_bg_image ) {
+				// Layer overlay ON TOP of existing background image/gradient.
+				$props['background-image'] = self::v4_string( $overlay_gradient . ', ' . $existing_bg_image['value'] );
+			} else {
+				$props['background-image'] = self::v4_string( $overlay_gradient );
+			}
+			if ( ! empty( $overlay_blend ) && 'normal' !== $overlay_blend ) {
+				$props['background-blend-mode'] = self::v4_string( $overlay_blend );
 			}
 		}
 
@@ -1385,6 +1407,25 @@ final class V3_To_V4_Converter {
 			return strtolower( preg_replace( '/\s+/', '', $color ) );
 		}
 		return $color;
+	}
+
+	/**
+	 * Convert a hex color to rgba with given opacity.
+	 * Falls back to original hex if conversion fails.
+	 */
+	private static function hex_to_rgba( string $hex, float $opacity ): string {
+		$hex = ltrim( $hex, '#' );
+		if ( preg_match( '/^([a-f0-9]{6}|[a-f0-9]{3})$/i', $hex ) ) {
+			if ( 3 === strlen( $hex ) ) {
+				$hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+			}
+			$r = hexdec( substr( $hex, 0, 2 ) );
+			$g = hexdec( substr( $hex, 2, 2 ) );
+			$b = hexdec( substr( $hex, 4, 2 ) );
+			return "rgba({$r}, {$g}, {$b}, {$opacity})";
+		}
+		// If not a hex color (e.g. named color), return as-is.
+		return $hex;
 	}
 
 	// =====================================================================
