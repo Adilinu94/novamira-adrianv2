@@ -1,5 +1,28 @@
 # Changelog — Novamira AdrianV2
 
+## [1.9.0] — 2026-06
+
+### Added — Abilities: clear-cache standalone, memory-auto-fill, skill-list + patch-element-styles multi-post
+
+| Ability | Zweck |
+|---|---|
+| `novamira-adrianv2/clear-cache` | **Refactored**: aus class-site-tools.php in eigene Klasse extrahiert. Neu: `post_id`, `post_ids[]` (Batch), `include_nested`. Löscht `_elementor_css` Meta + WP object cache pro Post. |
+| `novamira-adrianv2/memory-auto-fill` | Füllt leere `$$type:global-variable` id-Felder in `_elementor_data`. Nimmt `variable_map: { "token-name": "e-gv-xxxxxxx" }`. Batch-Support via `post_ids[]`. `dry_run`-Modus. |
+| `novamira-adrianv2/skill-list` | Listet alle installierten Skills aus `includes/skills/`. Liest YAML-Frontmatter (name, description). Filter + `include_content`-Option. |
+
+### Changed
+
+| Ability | Änderung |
+|---|---|
+| `novamira-adrianv2/patch-element-styles` | **Multi-Post**: `post_ids: integer[]` ergänzt. `execute_batch()` wendet dieselben Patches auf N Posts in einem Aufruf an. Rückgabe: `total_patched`, `post_count`, `results[]`. |
+
+### Fixed
+
+- `class-site-tools.php`: Doppelte `wp_register_ability('novamira-adrianv2/clear-cache')` Registrierung entfernt — war nach Extraktion in eigene Klasse redundant.
+
+---
+
+
 ## [1.5.1] — 2026-06
 
 ### Added — Framer Pipeline Integration (Proposals #3, #4, #6, #9)

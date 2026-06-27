@@ -10,7 +10,7 @@
 
 ## Übersicht
 
-Novamira AdrianV2 ist das **Fähigkeiten-Plugin** für den Novamira MCP Server auf solar.local. Es stellt ~40+ MCP-Abilities bereit, die von KI-Agenten (Claude, Codebuff) über JSON-RPC 2.0 aufgerufen werden können.
+Novamira AdrianV2 ist das **Fähigkeiten-Plugin** für den Novamira MCP Server auf solar.local. Es stellt ~44+ MCP-Abilities bereit, die von KI-Agenten (Claude, Codebuff) über JSON-RPC 2.0 aufgerufen werden können.
 
 ### Architektur
 
