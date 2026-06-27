@@ -41,7 +41,7 @@ if (!defined('ABSPATH')) {
 // Constants
 // -----------------------------------------------------------------------------
 
-define(constant_name: 'NOVAMIRA_ADRIANV2_VERSION', value: '1.8.0');
+define(constant_name: 'NOVAMIRA_ADRIANV2_VERSION', value: '1.9.0');
 define(constant_name: 'NOVAMIRA_ADRIANV2_FILE', value: __FILE__);
 define(constant_name: 'NOVAMIRA_ADRIANV2_DIR', value: plugin_dir_path(__FILE__));
 define(constant_name: 'NOVAMIRA_ADRIANV2_MIN_PHP_VERSION', value: '8.0');
