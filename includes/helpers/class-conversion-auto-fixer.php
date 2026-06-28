@@ -64,7 +64,7 @@ final class Conversion_AutoFixer {
 	private static $kit_tree_cache_id = null;
 
 	// ── Maximum allowed nesting depth before auto-flattening ──
-	private const MAX_NESTING_DEPTH = 5;
+	private const MAX_NESTING_DEPTH = 4; // Lowered from 5: align with layout-audit depth-3 threshold (field-tested 2026-06)
 
 	// ── Layout-critical settings that prevent container flattening ──
 	private const LAYOUT_CRITICAL_KEYS = array(
@@ -149,6 +149,12 @@ final class Conversion_AutoFixer {
 
 		// 2g. Clean up any newly identical overrides from 2f.
 		$tree    = self::remove_identical_mobile_overrides( $tree, $fixes );
+		$total_fixes += $fixes;
+
+		// 2h. Convert equal-width N-column flex rows to CSS Grid.
+		// Reduces nesting depth: children no longer need explicit width.
+		// Only applied to pass-through column containers (no styling/layout).
+		$tree    = self::fix_grid_candidates( $tree, $fixes );
 		$total_fixes += $fixes;
 
 		return $tree;
@@ -1133,4 +1139,194 @@ final class Conversion_AutoFixer {
 	private static function is_external_class_ref( string $class_id ): bool {
 		return str_starts_with( $class_id, 'gc-' );
 	}
+	// =====================================================================
+	// Fix 8: Convert equal-width N-column flex rows to CSS Grid
+	// =====================================================================
+
+	/**
+	 * Walk the V4 tree and replace equal-width flex-row containers
+	 * with CSS Grid when all N children (N=2,3,4) are unstyled column
+	 * wrappers. Reduces nesting depth: children no longer need width props.
+	 *
+	 * Heuristic: "equal-width" means all children either
+	 *   (a) have no explicit width style prop, or
+	 *   (b) all share the same explicit width (e.g. all 50%, all 33.33%).
+	 *
+	 * Adds custom_css: display:grid; grid-template-columns: repeat(N, 1fr)
+	 * to the parent, and removes width from children's style variants.
+	 *
+	 * @param array $tree   V4 element tree.
+	 * @param int   &$fixes Fix counter.
+	 * @return array
+	 */
+	private static function fix_grid_candidates( array $tree, int &$fixes ): array {
+		foreach ( $tree as &$el ) {
+			if ( ! is_array( $el ) ) {
+				continue;
+			}
+
+			$children = $el['elements'] ?? array();
+			// Recurse first (bottom-up).
+			if ( ! empty( $children ) ) {
+				$el['elements'] = self::fix_grid_candidates( $children, $fixes );
+			}
+
+			// Only transform e-flexbox containers (not e-div-block or widgets).
+			if ( 'e-flexbox' !== ( $el['elType'] ?? '' ) ) {
+				continue;
+			}
+
+			$el_children = $el['elements'] ?? array();
+			$n           = count( $el_children );
+
+			// Only 2-, 3-, or 4-column layouts.
+			if ( $n < 2 || $n > 4 ) {
+				continue;
+			}
+
+			// All children must be containers (not widgets).
+			foreach ( $el_children as $child ) {
+				if ( ! in_array( $child['elType'] ?? '', array( 'e-flexbox', 'e-div-block' ), true ) ) {
+					continue 2;
+				}
+			}
+
+			// Parent must have row direction (or default, which is row).
+			$parent_flex_dir = self::get_style_prop( $el, 'flex-direction' );
+			if ( null !== $parent_flex_dir && 'row' !== $parent_flex_dir ) {
+				continue;
+			}
+
+			// Check if children are equal-width (all same width or all no width).
+			$widths = array();
+			foreach ( $el_children as $child ) {
+				$w = self::get_style_prop( $child, 'width' );
+				$widths[] = $w ?? '__none__';
+			}
+			$unique_widths = array_unique( $widths );
+
+			// All equal OR all have no width → grid candidate.
+			if ( count( $unique_widths ) !== 1 ) {
+				continue;
+			}
+
+			// Apply: add custom_css to parent, remove width from children.
+			$grid_css = sprintf( 'display:grid;grid-template-columns:repeat(%d,1fr);', $n );
+			$el       = self::apply_custom_css_to_element( $el, $grid_css );
+
+			// Remove explicit width from children (grid tracks control it).
+			if ( '__none__' !== $widths[0] ) {
+				foreach ( $el['elements'] as &$child ) {
+					$child = self::remove_style_prop( $child, 'width' );
+				}
+				unset( $child );
+			}
+
+			$fixes++;
+		}
+		unset( $el );
+
+		return $tree;
+	}
+
+	/**
+	 * Get the first desktop-variant value for a given CSS prop from an element's styles.
+	 *
+	 * @param array  $el   V4 element.
+	 * @param string $prop CSS property name (e.g. 'width', 'flex-direction').
+	 * @return string|null Raw value string, or null if not set.
+	 */
+	private static function get_style_prop( array $el, string $prop ): ?string {
+		foreach ( $el['styles'] ?? array() as $style_def ) {
+			foreach ( $style_def['variants'] ?? array() as $variant ) {
+				if ( 'desktop' !== ( $variant['meta']['breakpoint'] ?? '' ) ) {
+					continue;
+				}
+				$props = $variant['props'] ?? array();
+				if ( ! isset( $props[ $prop ] ) ) {
+					continue;
+				}
+				$def = $props[ $prop ];
+				// Handle common $$type shapes.
+				$type  = $def['$$type'] ?? '';
+				$value = $def['value'] ?? null;
+				if ( 'string' === $type ) {
+					return (string) $value;
+				}
+				if ( 'size' === $type && is_array( $value ) ) {
+					return (string) ( $value['size'] ?? '' ) . ( $value['unit'] ?? '' );
+				}
+				return (string) json_encode( $value );
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Apply a raw CSS string to the first desktop variant of the first style.
+	 *
+	 * If the element has no styles, creates a minimal style entry.
+	 *
+	 * @param array  $el  V4 element.
+	 * @param string $css Raw CSS string (e.g. 'display:grid;grid-template-columns:repeat(3,1fr);').
+	 * @return array Modified element.
+	 */
+	private static function apply_custom_css_to_element( array $el, string $css ): array {
+		// If the element already has a style, attach to the first one's desktop variant.
+		if ( ! empty( $el['styles'] ) ) {
+			$first_key = array_key_first( $el['styles'] );
+			foreach ( $el['styles'][ $first_key ]['variants'] as &$variant ) {
+				if ( 'desktop' === ( $variant['meta']['breakpoint'] ?? '' ) ) {
+					$existing = $variant['custom_css']['raw'] ?? '';
+					$variant['custom_css'] = array(
+						'raw' => trim( $existing . ' ' . 'selector{' . $css . '}' ),
+					);
+					return $el;
+				}
+			}
+			unset( $variant );
+			return $el;
+		}
+
+		// No styles: create a minimal one.
+		$style_id             = $el['id'] . '-grid';
+		$el['styles'][ $style_id ] = array(
+			'id'       => $style_id,
+			'type'     => 'class',
+			'label'    => $style_id,
+			'variants' => array(
+				array(
+					'meta'       => array( 'breakpoint' => 'desktop', 'state' => null ),
+					'props'      => array(),
+					'custom_css' => array( 'raw' => 'selector{' . $css . '}' ),
+				),
+			),
+		);
+		// Register in settings.classes (server usually does this, but be safe).
+		$existing_classes = $el['settings']['classes']['value'] ?? array();
+		if ( ! in_array( $style_id, $existing_classes, true ) ) {
+			$el['settings']['classes'] = array( '$$type' => 'classes', 'value' => array_merge( $existing_classes, array( $style_id ) ) );
+		}
+		return $el;
+	}
+
+	/**
+	 * Remove a CSS prop from all variants in all styles of an element.
+	 *
+	 * @param array  $el   V4 element.
+	 * @param string $prop CSS prop to remove (e.g. 'width').
+	 * @return array Modified element.
+	 */
+	private static function remove_style_prop( array $el, string $prop ): array {
+		foreach ( $el['styles'] as &$style_def ) {
+			foreach ( $style_def['variants'] as &$variant ) {
+				unset( $variant['props'][ $prop ] );
+			}
+			unset( $variant );
+		}
+		unset( $style_def );
+		return $el;
+	}
+
+
 }
