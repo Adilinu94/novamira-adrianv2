@@ -156,3 +156,48 @@ START: User will eine Seite bearbeiten / erstellen / konvertieren
 ---
 
 *Dokument erstellt 2026-06-21. Basiert auf Code-Review und E2E-Test-Ergebnissen.*
+
+---
+
+## KRITISCHE LEARNINGS (2026-06 – V3→V4 Live-Test)
+
+### Bug #1: Falscher elType für e-flexbox
+**FALSCH:** `{ "elType": "widget", "widgetType": "e-flexbox" }` → rendert NICHT
+**RICHTIG:** `{ "elType": "e-flexbox" }` – kein widgetType für Container!
+
+**Warum:** In V4 Atomic sind Container kein `elType: "widget"`. Sie haben `elType: "e-flexbox"` direkt.
+Gleiche gilt für `e-div-block`.
+
+### Bug #2: `$$type` in `bash -e "..."` wird zu `[PID]type`
+```bash
+# FALSCH - $$ = Prozess-ID (z.B. 556) → "556type"
+node -e "const x = {'$$type':'classes','value':[]}"
+# → {"556type":"classes","value":[]}
+
+# RICHTIG - immer .js Datei nutzen!
+cat > /tmp/gen.js << 'EOF'
+const x = {"$$type":"classes","value":[]}
+EOF
+node /tmp/gen.js
+```
+
+### Bug #3: `document->save(['elements'=>$data])` verliert V4 Daten
+```php
+// FALSCH - V4 Daten verschwinden:
+$document->save(['elements' => $data]);
+
+// RICHTIG:
+update_post_meta($post_id, '_elementor_data', wp_slash(json_encode($data)));
+\Elementor\Plugin::$instance->files_manager->clear_cache();
+```
+
+### Unsupported V3 Widgets (convert-page-v3-to-v4 behält als V3):
+- `counter`, `rating`, `icon-list`, `icon-box`, `elementskit-icon-box`
+- `elementskit-video`, `elementskit-accordion`, `testimonial`
+
+### Workarounds:
+- `counter` → statische `e-heading` ("478+")
+- `rating` → `e-heading` mit Stern-Emoji
+- `elementskit-video` → `e-youtube`
+- `elementskit-accordion` → HTML Widget `<details>/<summary>`
+- `icon-list` / `icon-box` → `e-flexbox` + children manuell
