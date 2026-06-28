@@ -43,3 +43,8 @@ require_once __DIR__ . '/class-list-style-keys.php';
         if ( class_exists( 'Novamira\\AdrianV2\\Abilities\\Utilities\\Plugin_Deploy' ) && method_exists( 'Novamira\\AdrianV2\\Abilities\\Utilities\\Plugin_Deploy', 'register' ) ) {
             Novamira\AdrianV2\Abilities\Utilities\Plugin_Deploy::register();
         }
+
+// Pipeline State Manager (helper class registered as ability).
+if ( class_exists( 'Novamira\\AdrianV2\\Helpers\\Pipeline_State_Manager' ) && method_exists( 'Novamira\\AdrianV2\\Helpers\\Pipeline_State_Manager', 'register' ) ) {
+    Novamira\AdrianV2\Helpers\Pipeline_State_Manager::register();
+}

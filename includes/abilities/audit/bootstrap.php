@@ -10,6 +10,7 @@ $novamira_adrianv2_audit_files = [
     __DIR__ . '/class-page-audit.php',
     __DIR__ . '/class-responsive-audit.php',
     __DIR__ . '/class-variable-audit.php',
+    __DIR__ . '/class-v4-performance-analyzer.php',
     __DIR__ . '/class-visual-qa.php',
 ];
 
@@ -34,6 +35,9 @@ foreach ( $novamira_adrianv2_audit_files as $novamira_adrianv2_audit_file ) {
         }
         if ( class_exists( 'Novamira\AdrianV2\Abilities\Audit\Variable_Audit' ) && method_exists( 'Novamira\AdrianV2\Abilities\Audit\Variable_Audit', 'register' ) ) {
             Novamira\AdrianV2\Abilities\Audit\Variable_Audit::register();
+        }
+        if ( class_exists( 'Novamira\AdrianV2\Abilities\Audit\V4_Performance_Analyzer' ) && method_exists( 'Novamira\AdrianV2\Abilities\Audit\V4_Performance_Analyzer', 'register' ) ) {
+            Novamira\AdrianV2\Abilities\Audit\V4_Performance_Analyzer::register();
         }
         if ( class_exists( 'Novamira\AdrianV2\Abilities\Audit\Visual_Qa' ) && method_exists( 'Novamira\AdrianV2\Abilities\Audit\Visual_Qa', 'register' ) ) {
             Novamira\AdrianV2\Abilities\Audit\Visual_Qa::register();

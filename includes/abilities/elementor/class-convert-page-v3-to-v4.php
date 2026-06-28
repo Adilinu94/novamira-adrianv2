@@ -161,17 +161,6 @@ class Convert_Page_V3_To_V4 {
 		$kit_result = null;
 
 		if ( $run_kit_convert ) {
-			// Warn if site already has V4 variables (likely from a prior kit-convert
-			// call on this site). Running kit-convert twice creates duplicate variables.
-			// Suggestion: save variable_map from the first run to Memory, then pass
-			// variable_map + run_kit_convert=false for subsequent pages.
-			$existing_vars = (array) get_post_meta( (int) get_option( 'elementor_active_kit' ), '_elementor_global_variables_active_kit', true );
-			if ( ! empty( $existing_vars ) ) {
-				$warnings[] = sprintf(
-					'[kit-convert] Site already has %d V4 variable(s). Running kit-convert again may create duplicates. Consider passing variable_map + run_kit_convert=false for subsequent pages.',
-					count( $existing_vars )
-				);
-			}
 			$kit_result = Kit_Convert_V3_To_V4::execute( array(
 				'dry_run' => $dry_run,
 			) );

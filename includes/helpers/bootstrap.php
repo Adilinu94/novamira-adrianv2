@@ -88,6 +88,11 @@ require_once __DIR__ . '/class-conversion-auto-fixer.php';
 //     when WPCode compiled-asset cache is unavailable.
 require_once __DIR__ . '/class-elementor-css-override.php';
 
+// 20. Pipeline State Manager — persistent state tracking for external pipelines.
+//     Saves/loads pipeline snapshots from the V4-Pipeline and site-clone-to-v3
+//     tools. Registered as MCP-Ability: novamira-adrianv2/pipeline-state.
+require_once __DIR__ . '/class-pipeline-state-manager.php';
+
 // 19. Local Styles Renderer — inline CSS workaround for Elementor 4.1.x bug
 //     where `elementor/atomic-widgets/styles/register` is not fired in frontend.
 //     Auto-disables on Elementor ≥ 4.2 when the native pipeline works.
